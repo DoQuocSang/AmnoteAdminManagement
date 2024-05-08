@@ -20,18 +20,12 @@ import { toVND } from "../../../components/utils/Utils";
 import { isEmptyOrSpaces } from "../../../components/utils/Utils";
 import DefaultImage from "images/post-default.png";
 import Error404 from "../../../components/admin/other/Error404";
-import { getHeritages } from "services/HeritageRepository";
 import DeleteModal from "../../../components/admin/modal/DeleteModal";
-import { getHeritageById } from "../../../services/HeritageRepository";
-import { checkImageArray } from "../../../components/utils/Utils";
-import SearchInput from "../../../components/admin/other/SearchInput";
-import { getHeritagesByQuerySearch } from "../../../services/HeritageRepository";
 import { getAllCustomer } from "services/CustomerRepository";
 import Pagination from "../../../components/admin/pagination/Pagination";
 import { useNavigate } from "react-router-dom";
 import LoadingApiGif from "../../../images/loading-api-color.gif";
 import { useDispatch } from "react-redux";
-import { setData } from "redux/actions/actions";
 
 export default () => {
   document.title = "Quản lý khách hàng";

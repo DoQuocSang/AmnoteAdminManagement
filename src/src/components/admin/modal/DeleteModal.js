@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCircleCheck, faThumbsUp } from "@fortawesome/free-solid-svg-icons";
 import { deleteCustomer } from "services/CustomerRepository";
 import LoadingApiGif from "../../../images/loading-api-color.gif";
+import { deleteUnitCode } from "services/UnitCodeRepository";
 
 export default ({
   mainText = "item",
@@ -51,6 +52,27 @@ export default ({
         });
       }
     }
+
+    if (type === "unit-code") {
+        console.log(deleteItems);
+  
+        for (const item of deleteItems) {
+          deleteUnitCode({
+            Lag: sessionStorage.getItem("lag"),
+            productUnitCD: item,
+          }).then((data) => {
+            if (data.status === "success") {
+              isDelete(true);
+              //Thay đổi nội dung thông báo nếu xóa thành công
+              setChangeContent(true);
+              setShowLoading(false);
+            } else if (data.status === "error") {
+              console.log("Lỗi");
+              setShowLoading(false);
+            }
+          });
+        }
+      }
   };
 
   return (

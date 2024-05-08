@@ -41,6 +41,10 @@ export default ({
     page = "all-customer";
   }
 
+  if (type === "unit-code") {
+    page = "all-unit-code";
+  }
+
   const handleContinue = () => {
     isContinue(true);
   };
