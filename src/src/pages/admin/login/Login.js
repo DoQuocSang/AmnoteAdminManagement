@@ -27,13 +27,13 @@ export default () => {
       username: "",
       password: "",
       companyID: 0,
-      Lag: "VIET",
+      Lag: "",
     },
     [formData, setFormData] = useState(initialState);
 
   sessionStorage.setItem("loggedInUsername", "");
   sessionStorage.setItem("accessToken", "");
-
+  sessionStorage.setItem("lag", "");
 
   const validateAllHeritageInput = () => {
     //console.log(heritageData)
@@ -52,7 +52,7 @@ export default () => {
     }
 
     if (formData.Lag.trim() === "") {
-      validationErrors.Lag = "Vui lòng nhập Lag";
+      validationErrors.Lag = "Vui lòng nhập ngôn ngữ";
     }
 
     setFormErrors(validationErrors);
@@ -77,6 +77,8 @@ export default () => {
 
           setLoggedInUsername(formData.username);
           sessionStorage.setItem("loggedInUsername", formData.username);
+
+          sessionStorage.setItem("lag", formData.Lag);
 
           dispatch(loginSuccess(data.access_token));
 
@@ -208,13 +210,11 @@ export default () => {
                       className="block mb-2 text-sm font-semibold text-gray-600"
                       for="password"
                     >
-                      Lag
+                      Ngôn ngữ
                     </label>
-                    <input
-                      className="text-black placeholder-gray-600 w-full px-4 py-2.5 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-100  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
+                    <select
+                      className="appearance-none text-black placeholder-gray-600 w-full px-4 py-2.5 text-base transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-100  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
                       id="Lag"
-                      type="text"
-                      placeholder="Nhập Lag"
                       value={formData.Lag}
                       onChange={(e) =>
                         setFormData((prevState) => ({
@@ -222,7 +222,12 @@ export default () => {
                           Lag: e.target.value,
                         }))
                       }
-                    />
+                    >
+                      <option value="">--- Chọn ngôn ngữ ---</option>
+                      <option value="VIET">VIET</option>
+                      <option value="KOR">KOR</option>
+                      <option value="ENG">ENG</option>
+                    </select>
                     {formErrors.Lag && (
                       <p className="text-red-500 text-sm font-semibold mt-2">
                         <FontAwesomeIcon

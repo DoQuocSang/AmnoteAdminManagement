@@ -5,7 +5,7 @@ const axios = require('axios');
 const bodyParser = require('body-parser');
 
 const app = express();
-const PORT = 3001; // Choose any available port
+const PORT = 3001; 
 
 // Body parsing middleware
 app.use(bodyParser.json());
@@ -20,7 +20,7 @@ app.use('/cors', async (req, res) => {
     console.log(req.body);
     const response = await axios({
       method: req.method,
-      url: `http://118.69.170.50/API${req.url}`, // Replace 'https://api.example.com' with your API server's URL
+      url: `http://118.69.170.50/API${req.url}`,
       headers: req.headers,
       data: req.body,
     });
@@ -28,7 +28,11 @@ app.use('/cors', async (req, res) => {
     res.send(response.data);
   } catch (error) {
     console.error(error);
-    res.status(error.response.status || 500).send(error.response.data || 'Internal Server Error');
+    if (error.response && error.response.data) {
+      res.status(error.response.status || 500).send(error.response.data);
+    } else {
+      res.status(error.response.status || 500).send('Internal Server Error');
+    }
   }
 });
 

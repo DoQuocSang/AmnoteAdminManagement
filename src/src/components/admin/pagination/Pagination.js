@@ -35,8 +35,8 @@ const Pagination = ({
             key={i}
             class={
               i === currentPage
-                ? "mx-1 flex h-9 w-9 items-center justify-center rounded-md bg-blue-100 text-blue-500 p-0 text-sm shadow-md transition duration-150 ease-in-out hover:bg-gray-100"
-                : "mx-1 flex h-9 w-9 items-center justify-center rounded-md border border-blue-gray-100 bg-transparent p-0 text-sm text-blue-gray-500 transition duration-150 ease-in-out hover:bg-gray-100"
+                ? "cursor-pointer mx-1 flex h-9 w-9 items-center justify-center rounded-md bg-blue-100 text-blue-500 p-0 text-sm shadow-md transition duration-150 ease-in-out hover:bg-gray-100"
+                : "cursor-pointer mx-1 flex h-9 w-9 items-center justify-center rounded-md border border-blue-gray-100 bg-transparent p-0 text-sm text-blue-gray-500 transition duration-150 ease-in-out hover:bg-gray-100"
             }
             onClick={() => handlePageChange(i)}
           >
@@ -63,7 +63,7 @@ const Pagination = ({
           <ul class="flex">
           <li>
               <a
-                class="mx-1 flex h-9 px-2 items-center justify-center rounded-md border border-blue-gray-100 bg-transparent p-0 text-sm text-blue-gray-500 transition duration-150 ease-in-out hover:bg-gray-100"
+                class="cursor-pointer mx-1 flex h-9 px-2 items-center justify-center rounded-md border border-blue-gray-100 bg-transparent p-0 text-sm text-blue-gray-500 transition duration-150 ease-in-out hover:bg-gray-100"
                 onClick={() => handlePageChange(1)}
               >
                 <span class="text-sm whitespace-nowrap">
@@ -73,7 +73,7 @@ const Pagination = ({
             </li>
             <li>
               <a
-                class="mx-1 flex h-9 w-9 items-center justify-center rounded-md border border-blue-gray-100 bg-transparent p-0 text-sm text-blue-gray-500 transition duration-150 ease-in-out hover:bg-gray-100"
+                class="cursor-pointer mx-1 flex h-9 w-9 items-center justify-center rounded-md border border-blue-gray-100 bg-transparent p-0 text-sm text-blue-gray-500 transition duration-150 ease-in-out hover:bg-gray-100"
                 onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
               >
                 <span class="material-icons text-sm">
@@ -84,7 +84,7 @@ const Pagination = ({
             {renderPageNumbers()}
             <li>
               <a
-                class="mx-1 flex h-9 w-9 items-center justify-center rounded-md border border-blue-gray-100 bg-transparent p-0 text-sm text-blue-gray-500 transition duration-150 ease-in-out hover:bg-gray-100"
+                class="cursor-pointer mx-1 flex h-9 w-9 items-center justify-center rounded-md border border-blue-gray-100 bg-transparent p-0 text-sm text-blue-gray-500 transition duration-150 ease-in-out hover:bg-gray-100"
                 onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
               >
                 <span class="material-icons text-sm">
@@ -94,7 +94,7 @@ const Pagination = ({
             </li>
             <li>
               <a
-                class="mx-1 flex h-9 px-2 items-center justify-center rounded-md border border-blue-gray-100 bg-transparent p-0 text-sm text-blue-gray-500 transition duration-150 ease-in-out hover:bg-gray-100"
+                class="cursor-pointer mx-1 flex h-9 px-2 items-center justify-center rounded-md border border-blue-gray-100 bg-transparent p-0 text-sm text-blue-gray-500 transition duration-150 ease-in-out hover:bg-gray-100"
                 onClick={() => handlePageChange(totalPages)}
               >
                 <span class="text-sm whitespace-nowrap">

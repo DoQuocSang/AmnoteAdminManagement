@@ -5,10 +5,16 @@ const getAccessToken = () => {
   return sessionStorage.getItem("accessToken");
 };
 
+const getLag = () => {
+  return sessionStorage.getItem("lag");
+};
+
 export async function get_api(your_api) {
   try {
     const token = getAccessToken();
+    const lag = getLag();
     const response = await axios.get(your_api, {
+      params: { Lag: lag },
       headers: {
         authorization: `Bearer ${token}`,
       },
@@ -24,12 +30,21 @@ export async function get_api(your_api) {
   }
 }
 
-export async function delete_api(your_api) {
+export async function delete_api(your_api, formData) {
   try {
-    const response = await axios.delete(your_api);
-    return response.data.success;
+    const token = getAccessToken();
+    const response = await axios.delete(your_api, formData, {
+      headers: {
+        authorization: `Bearer ${token}`,
+      },
+    });
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      return null;
+    }
   } catch (error) {
-    console.log("Error", error.message);
+    return error.response.data;
   }
 }
 
@@ -41,13 +56,16 @@ export async function post_api(your_api, formData) {
         authorization: `Bearer ${token}`,
       },
     });
+
     if (response.status === 200) {
       return response.data;
     } else {
       return null;
     }
+  
   } catch (error) {
-    console.log("Error", error.message);
+    console.log("Error", error);
+    return error.response.data;
   }
 }
 

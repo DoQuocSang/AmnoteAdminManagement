@@ -1,7 +1,17 @@
 import React, { useEffect, useState, useRef, createRef } from "react";
 import { useParams } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCircle, faCircleInfo, faCircleNotch, faCirclePlus, faPenToSquare, faPencil, faXmarkCircle } from "@fortawesome/free-solid-svg-icons";
+import {
+  faCheckCircle,
+  faCircle,
+  faCircleInfo,
+  faCircleNotch,
+  faCirclePlus,
+  faMinus,
+  faPenToSquare,
+  faPencil,
+  faXmarkCircle,
+} from "@fortawesome/free-solid-svg-icons";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { Link } from "react-router-dom";
@@ -17,734 +27,1163 @@ import { addHeritage } from "../../../services/HeritageRepository";
 import { putHeritage } from "../../../services/HeritageRepository";
 import NotificationModal from "../../../components/admin/modal/NotificationModal";
 
-import DefaultImage from "images/post-default-full.png"
+import DefaultImage from "images/post-default-full.png";
 import { getHeritageCategories } from "../../../services/HeritageCategoryRepository";
 import { getHeritageWithDetailById } from "../../../services/HeritageRepository";
 import { addHeritageWithParagraphs } from "../../../services/HeritageRepository";
 import { putHeritageWithParagraphs } from "../../../services/HeritageRepository";
 import { splitImageUrls } from "../../../components/utils/Utils";
+import { addCustomer, getSelectTypeCustomer } from "services/CustomerRepository";
+import { getAllBank } from "services/BankRepository";
 
 export default ({ type = "" }) => {
-    document.title = 'Thêm/Cập nhật di sản';
+  document.title = "Thêm/Cập nhật khách hàng";
 
-    let mainText = AddOrUpdateText(type, "di sản");
+  let mainText = AddOrUpdateText(type, "khách hàng");
 
-    const defaultHeritage = {
-        id: 0,
-        name: '',
-        short_description: '',
-        time: '',
-        image_360_url: '',
-        urlslug: '',
-        video_url: '',
-        location_id: 0,
-        management_unit_id: 0,
-        heritage_type_id: 0,
-        heritage_category_id: 0,
-        view_count: 0,
-        images: []
-    };
+  const initialState = {
+      Lag: sessionStorage.getItem("accessToken"),
+      CustomerCD: "",
+      // ----------------------------
+      Address: "",
+      CategoryCD: "",
+      CustomerType: "",
+      CustomerCD: "",
+      CustomerNM: "",
+      CustomerNM_EN: "",
+      CustomerNM_KOR: "",
+      Note: "",
+      Individual: "",
+      Nationality: "",
+      Email: "",
+      Lag: "",
+      BuyerNM: "",
+      // CustomerUserCD: "",
+      TaxCD: "",
+      BankCD: "",
+      OwnerNM: "",
+      BusinessType: "",
+      KindBusiness: "",
+      Fax: "",
+      ZipCD: "",
+      Tel: "",
+      IDNumber: "",
+      PlaceIssue:"",
+      DateIssue: "",
+      InquiryIn: "",
+      PaymentTerm: "",
+      CustomerReceive: "",
+      AddressReceive: "",
+      TaxCDReceive: "",
+      ID_Number: "",
+      PlaceIssue: "",
+      DateIssue: "",
+    },
+    [customer, setCustomer] = useState(initialState);
 
-    const defaultParagraphs = [
-        {
-            id: 0,
-            title: '',
-            description: '',
-            image_description: '',
-            image_url: '',
-            heritage_id: 0
-        }
-    ];
+  const [customerTypeList, SetCustomerTypeList] = useState([]);
+  const [bankList, setBankList] = useState([]);
+  const [emailList, setEmailList] = useState([]);
+  const [currentEmail, setCurrentEmail] = useState("");
+  const [successFlag, SetSuccessFlag] = useState(false);
+  const [customerErrors, setCustomerErrors] = useState({});
+  const [hasTaxCode, setHasTaxCode] = useState(true);
+  const [messageAPI, setMessageAPI] = useState("");
+  const [showLoading, setShowLoading] = useState(false);
 
-    const initialState = {
-        heritage: {
-            ...defaultHeritage,
-        },
-        paragraphs: defaultParagraphs
-    }, [heritageData, setHeritageData] = useState(initialState);
+  let { id } = useParams();
+  id = id ?? 0;
 
-    const [heritageTypeList, setHeritageDataTypeList] = useState([]);
-    const [heritageCategoryList, setHeritageDataCategoryList] = useState([]);
-    const [locationList, setLocationList] = useState([]);
-    const [managementUnitList, setManagementUnitList] = useState([]);
-    const [successFlag, SetSuccessFlag] = useState(false);
-    const [heritageErrors, setHeritageErrors] = useState({});
-    const [paragraphErrors, setParagraphErrors] = useState([]);
+  let maintAction = "";
+  if (id === 0) {
+    maintAction = "thêm";
+  } else {
+    maintAction = "cập nhật";
+  }
 
-    let { id } = useParams();
-    id = id ?? 0;
-
-    let maintAction = '';
-    if (id === 0) {
-        maintAction = 'thêm';
-    }
-    else {
-        maintAction = 'cập nhật';
-    }
-
-    //console.log(id);
-    useEffect(() => {
-        document.title = "Thêm/ cập nhật di sản";
-
-        if (id !== 0) {
-            getHeritageWithDetailById(id).then(data => {
-                //console.log(data)
-                if (data) {
-                    const {
-                        id: ignoredId,
-                        ...heritageData } = data;
-                    setHeritageData({
-                        ...heritageData
-                    });
-                    // console.log("Đã bỏ qua id: " + ignoredId);
-                } else {
-                    setHeritageData(initialState);
-                }
-            })
-        }
-
-        getHeritageTypes().then(data => {
-            if (data) {
-                setHeritageDataTypeList(data.data);
-            }
-            else
-                setHeritageDataTypeList([]);
-            //console.log(data)
-        })
-
-        getHeritageCategories().then(data => {
-            if (data) {
-                setHeritageDataCategoryList(data.data);
-            }
-            else
-                setHeritageDataCategoryList([]);
-            //console.log(data)
-        })
-
-        getLocations().then(data => {
-            if (data) {
-                setLocationList(data.data);
-            }
-            else
-                setHeritageDataTypeList([]);
-            //console.log(data)
-        })
-
-        getManagementUnits().then(data => {
-            if (data) {
-                setManagementUnitList(data.data);
-            }
-            else
-                setHeritageDataTypeList([]);
-            //console.log(data)
-        })
-    }, [])
-    //console.log(heritage)
-
-    //validate lỗi bổ trống
-    const validateAllHeritageInput = () => {
-        //console.log(heritageData)
-        const validationErrors = {};
-
-        if (heritageData.heritage.heritage_type_id === 0) {
-            validationErrors.heritage_type_id = 'Vui lòng chọn loại di sản';
-        }
-
-        if (heritageData.heritage.name.trim() === '') {
-            validationErrors.name = 'Vui lòng nhập tên di sản';
-        }
-
-        // if (heritageData.heritage.image_url.trim() === '') {
-        //     validationErrors.image_url = 'Vui lòng chọn địa chỉ url của ảnh';
-        // }
-
-        if (heritageData.heritage.location_id === 0) {
-            validationErrors.location_id = 'Vui lòng chọn địa điểm';
-        }
-
-        if (heritageData.heritage.heritage_category_id === 0) {
-            validationErrors.heritage_category_id = 'Vui lòng chọn hình thức';
-        }
-
-        if (heritageData.heritage.management_unit_id === 0) {
-            validationErrors.management_unit_id = 'Vui lòng chọn đơn vị quản lý';
-        }
-
-        if (heritageData.heritage.time.trim() === '') {
-            validationErrors.time = 'Vui lòng nhập niên đại';
-        }
-
-        if (heritageData.heritage.urlslug.trim() === '') {
-            validationErrors.urlslug = 'Slug chưa được tạo';
-        }
-
-        if (heritageData.heritage.short_description.trim() === '') {
-            validationErrors.short_description = 'Vui lòng nhập mô tả chi tiết';
-        }
-
-        setHeritageErrors(validationErrors);
-        // Kiểm tra nếu có lỗi
-        if (Object.keys(validationErrors).length === 0) {
-            return false;
-        }
-        else {
-            return true;
-        }
-    }
-
-    //validate lỗi bổ trống
-    const validateAllParagraphInput = () => {
-        const validationErrors = [];
-
-        heritageData.paragraphs.forEach((paragraph, index) => {
-            const errors = {};
-        
-            if (paragraph.title.trim() === '') {
-              errors.paragraphs_title = 'Vui lòng nhập tiêu đề';
-            }
-        
-            if (paragraph.description.trim() === '') {
-              errors.paragraphs_description = 'Vui lòng nhập mô tả chi tiết';
-            }
-        
-            validationErrors[index] = errors;
-        });
-        
-        setParagraphErrors(validationErrors);
-        // Kiểm tra nếu có lỗi
-        if (Object.keys(validationErrors).length === 0) {
-            return false;
-        }
-        else {
-            return true;
-        }
-    }
+  //console.log(id);
+  useEffect(() => {
+    document.title = "Thêm/ cập nhật khách hàng";
     
-
-    const handleSubmit = () => {
-        // Nếu không có lỗi mới xóa hoặc cập nhật
-        if (validateAllHeritageInput() === false) {
-            if (id === 0) {
-                addHeritageWithParagraphs(heritageData).then(data => {
-                    SetSuccessFlag(data);
-                    //console.log(data);
-                });
-            }
-            else {
-                putHeritageWithParagraphs(id, heritageData).then(data => {
-                    SetSuccessFlag(data);
-                    //console.log(data);
-                });
-            }
-        }
+    if (id !== 0) {
     }
 
-    //Xử lý khi bấm xóa bên component con NotificationModal
-    const childToParent = (isContinue) => {
-        if (isContinue === true && id === 0) {
-            setHeritageData(initialState);
-            // Reset flag sau khi thêm thành công
-            setTimeout(() => { SetSuccessFlag(false); }, 1000)
-        }
+    getSelectTypeCustomer().then((data) => {
+      if (data) {
+        SetCustomerTypeList(data.result);
+      } else {
+        SetCustomerTypeList([]);
+      }
+      // console.log(data.result);
+    });
+
+    getAllBank().then((data) => {
+      if (data) {
+        setBankList(data.result);
+      } else {
+        setBankList(data.result);
+      }
+      // console.log(data.result);
+    });
+  }, []);
+  //console.log(heritage)
+
+  //validate lỗi bổ trống
+  const validateAllCustomerInput = () => {
+    //console.log(heritageData)
+    const validationErrors = {};
+
+    if (customer.CustomerType.trim() === "") {
+      validationErrors.CustomerType = "Vui lòng chọn loại khách hàng";
     }
 
-    // Xử lý ref khi thêm xóa textarea cho mô tả (để thêm <image> hoặc <br>)
-    const [textareaRefs, setTextareaRefs] = useState([]);
+    if (customer.CategoryCD.trim() === "") {
+      validationErrors.CategoryCD = "Vui lòng chọn phân loại khách hàng";
+    }
 
-    const addTextarea = () => {
-        setTextareaRefs((prevRefs) => [...prevRefs, createRef()]);
-    };
+    if (customer.CustomerNM.trim() === "") {
+      validationErrors.CustomerNM = "Vui lòng nhập tên khách hàng (tiếng Việt)";
+    }
 
-    const removeTextarea = (index) => {
-        setTextareaRefs((prevRefs) => {
-            const newRefs = [...prevRefs];
-            newRefs.splice(index, 1);
-            return newRefs;
+    // if (customer.CustomerNM_EN.trim() === "") {
+    //   validationErrors.CustomerNM_EN = "Vui lòng nhập tên khách hàng (tiếng Hàn)";
+    // }
+
+    // if (customer.CustomerNM_KOR.trim() === "") {
+    //   validationErrors.CustomerNM_KOR = "Vui lòng nhập tên khách hàng (tiếng Anh)";
+    // }
+
+    if(hasTaxCode){
+      if (customer.TaxCD.trim() === "") {
+        validationErrors.TaxCD = "Vui lòng nhập mã số thuế";
+      }
+      else if (customer.TaxCD.trim().length !== 10) {
+        validationErrors.TaxCD = "Vui lòng nhập đủ 10 chữ số";
+      }
+    }
+
+    if (customer.Address.trim() === "") {
+      validationErrors.Address = "Vui lòng nhập địa chỉ";
+    }
+
+    // if (customer.Note.trim() === "") {
+    //   validationErrors.Note = "Vui lòng nhập lưu ý khách hàng";
+    // }
+
+    // if (customer.Individual.trim() === "") {
+    //   validationErrors.Individual = "Vui lòng chọn cá nhân cư trú";
+    // }
+
+    // if (customer.Nationality.trim() === "") {
+    //   validationErrors.Nationality = "Vui lòng nhập quốc tịch";
+    // }
+
+    // if (customer.IDNumber.trim() === "") {
+    //   validationErrors.IDNumber = "Vui lòng nhập CMND/CCCD";
+    // }
+
+    // if (customer.PlaceIssue.trim() === "") {
+    //   validationErrors.PlaceIssue = "Vui lòng nhập nơi cấp";
+    // }
+
+    // if (customer.DateIssue.trim() === "") {
+    //   validationErrors.DateIssue = "Vui lòng nhập ngày cấp";
+    // }
+
+    setCustomerErrors(validationErrors);
+    // Kiểm tra nếu có lỗi
+    if (Object.keys(validationErrors).length === 0) {
+      return false;
+    } else {
+      return true;
+    }
+  };
+
+  const CheckTaxCode = (eventValue) => {
+    if (eventValue === "4" || eventValue === "5") {
+      setHasTaxCode(false);
+    } else {
+      setHasTaxCode(true);
+    }
+  };
+
+  // const CheckTypeName = (eventValue) => {
+  //   if (parseInt(eventValue) === 2) {
+  //     setCustomer((prevData) => ({
+  //       ...prevData,
+  //       custome: "Nước ngoài",
+  //       CUSTOMER_TYPE_NAME_ENG: "Overseas",
+  //       CUSTOMER_TYPE_NAME_KOR: "해외",
+  //       CUSTOMER_TYPE_NAME_JAPAN: "",
+  //       CUSTOMER_TYPE_NAME_CHINA: "",
+  //     }));
+  //   } else if (parseInt(eventValue) === 1) {
+  //     setCustomer((prevData) => ({
+  //       ...prevData,
+  //       CUSTOMER_TYPE_NAME_VIET: "Nội địa",
+  //       CUSTOMER_TYPE_NAME_ENG: "Domestic",
+  //       CUSTOMER_TYPE_NAME_KOR: "국내",
+  //       CUSTOMER_TYPE_NAME_JAPAN: "",
+  //       CUSTOMER_TYPE_NAME_CHINA: "",
+  //     }));
+  //   }
+
+  //   // console.log(customer);
+  // };
+
+  const searchByBankCode = (BankCD) => {
+    const bank = bankList.find((bank) => bank.BankCD === BankCD);
+    setCustomer((prevData) => ({
+      ...prevData,
+      BankNM: bank ? bank.BankNM : "Không tìm thấy ngân hàng",
+    }));
+  };
+
+  const handleAddEmail = (email) => {
+    if (email) {
+      setEmailList((prevEmailList) => [...prevEmailList, email]);
+      setCurrentEmail("");
+    }
+  };
+
+  const handleUpdateEmail = (email, index) => {
+    const updatedEmailList = [...emailList];
+    updatedEmailList[index] = email;
+    setEmailList(updatedEmailList);
+  };
+
+  const handleRemoveEmail = (index) => {
+    const updatedEmailList = [...emailList];
+    updatedEmailList.splice(index, 1);
+    setEmailList(updatedEmailList);
+  };
+
+  const handleSubmit = () => {
+    let emailString = emailList.join(";");
+
+    if (emailString.endsWith(";")) {
+      emailString = emailString.slice(0, -1);
+    }
+
+    customer.Email = emailString;
+    customer.Lag = sessionStorage.getItem("lag");
+    console.log(customer);
+
+    setMessageAPI("");
+    setShowLoading(true);
+
+    // Nếu không có lỗi mới xóa hoặc cập nhật
+    if (validateAllCustomerInput() === false) {
+      if (id === 0) {
+        addCustomer(customer).then(data => {
+            // SetSuccessFlag(true);
+            if(data.status === "success"){
+              SetSuccessFlag(true);
+              setMessageAPI(data.messages[0])
+              setShowLoading(false);
+              // console.log(data.result);
+            } else if (data.status === "error"){
+              SetSuccessFlag(false);
+              setMessageAPI(data.messages[0]);
+              setShowLoading(false);
+            }
         });
-    };
+      } else {
+        // putHeritageWithParagraphs(id, heritageData).then(data => {
+        //     SetSuccessFlag(data);
+        //     //console.log(data);
+        // });
+      }
+    }else{
+      setMessageAPI("Vui lòng kiểm tra lại các ô nhập liệu");
+      setShowLoading(false);
+    }
+  };
 
-    // Xử lý nút thêm <image> <br>
-    const addString = (stringToAdd, index) => {
-        console.log(textareaRefs)
-        const newParagraphs = [...heritageData.paragraphs];
-        const currentParagraph = newParagraphs[index];
-        const { description } = currentParagraph;
+  //Xử lý khi bấm xóa bên component con NotificationModal
+  const childToParent = (isContinue) => {
+    if (isContinue === true && id === 0) {
+      setCustomer(initialState);
+      // Reset flag sau khi thêm thành công
+      setTimeout(() => {
+        SetSuccessFlag(false);
+      }, 1000);
+    }
+  };
 
-        const inputElement = textareaRefs[index].current;
-        const { selectionStart, selectionEnd, value } = inputElement;
-
-        const newValue =
-            value.substring(0, selectionStart) +
-            stringToAdd +
-            value.substring(selectionEnd);
-
-
-        currentParagraph.description = newValue;
-        setHeritageData((prevState) => ({
-            ...prevState,
-            paragraphs: newParagraphs,
-        }));
-
-
-        inputElement.value = newValue;
-        // Đặt ví trí con trỏ chuột sau chuỗi vùa thêm, và không chọn bất kì chuỗi nào sau nó
-        // = trỏ chuột đứng sau chuỗi vừa thêm
-        inputElement.setSelectionRange(
-            selectionStart + stringToAdd.length,
-            selectionStart + stringToAdd.length
-        );
-        inputElement.focus();
-
-        // Cập nhật giá trị của short_description
-        // setHeritageData(heritageData => ({
-        //     ...heritageData,
-        //     heritage: {
-        //         ...heritageData.heritage,
-        //         short_description: newValue
-        //     }
-        // }));
-    };
-
-    // Xử lý sự kiện khi thay đổi đoạn mô tả
-    const handleParagraphChange = (index, e) => {
-        const newParagraphs = [...heritageData.paragraphs];
-        newParagraphs[index][e.target.name] = e.target.value;
-        setHeritageData({ ...heritageData, paragraphs: newParagraphs });
-    };
-
-    // Xử lý sự kiện khi thêm đoạn mô tả
-    const addParagraph = () => {
-        addTextarea();
-        setHeritageData({
-            ...heritageData,
-            paragraphs: [...heritageData.paragraphs, { ...defaultParagraphs[0] }]
-        });
-        // dùng ...defaultParagraphs[0] vì mảng khởi tạo mặc định có 1 phần tử duy nhất trong initialState
-    };
-
-    // Xử lý sự kiện khi xóa đoạn mô tả
-    const deleteParagraph = index => {
-        removeTextarea(index);
-        setHeritageData(heritageData => {
-            const updatedParagraphs = [...heritageData.paragraphs];
-            // xóa 1 phần tử theo index
-            updatedParagraphs.splice(index, 1);
-            return {
-                ...heritageData,
-                paragraphs: updatedParagraphs
-            };
-        });
-    };
-
-
-    return (
-        <main>
-            <div className="mt-12 px-4">
-                <div className="bg-white editor mx-auto flex w-10/12 max-w-2xl flex-col p-6 text-gray-800 shadow-lg mb-12 rounded-lg border-t-4 border-purple-400">
-                    <div className="flex mb-4 items-center space-x-5">
-                        <div className="h-14 w-14 bg-yellow-200 rounded-full flex flex-shrink-0 justify-center items-center text-yellow-500 text-2xl font-mono">i</div>
-                        <div className="block pl-2 font-semibold text-xl self-start text-gray-700">
-                            <h2 className="leading-relaxed">{mainText.headingText}</h2>
-                            <p className="text-sm text-gray-500 font-normal leading-relaxed">Vui lòng điền vào các ô bên dưới</p>
-                        </div>
-                    </div>
-                    <h2 className="font-semibold text-sm text-teal-500">
-                        Tên di sản
-                    </h2>
-                    <input
-                        name="name"
-                        required
-                        type="text"
-                        value={heritageData.heritage.name || ''}
-                        onChange={e =>
-                            setHeritageData(heritageData => ({
-                                ...heritageData,
-                                heritage: {
-                                    ...heritageData.heritage,
-                                    name: e.target.value,
-                                    urlslug: generateSlug(e.target.value),
-                                }
-                            }))
-                        }
-                        placeholder="Nhập tên di sản"
-                        className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400" />
-                    {heritageErrors.name &&
-                        <p className="text-red-500 mb-6 text-sm font-semibold">
-                            <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
-                            {heritageErrors.name}
-                        </p>
-                    }
-
-                    <h2 className="font-semibold text-sm text-teal-500">
-                        UrlSlug
-                    </h2>
-                    <input
-                        name="urlslug"
-                        required
-                        type="text"
-                        value={heritageData.heritage.urlslug || ''}
-                        // onChange={e => setHeritageData({
-                        //     ...heritageData.heritage,
-                        //     UrlSlug: e.target.value
-                        // })}
-                        placeholder="Nhập định danh slug"
-                        className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400" />
-                    {heritageErrors.urlslug &&
-                        <p className="text-red-500 mb-6 text-sm font-semibold">
-                            <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
-                            {heritageErrors.urlslug}
-                        </p>
-                    }
-
-                    <h2 className="font-semibold text-sm text-teal-500">
-                        Loại di sản
-                    </h2>
-                    <select
-                        name='heritage_type_id'
-                        value={heritageData.heritage.heritage_type_id}
-                        required
-                        onChange={e =>
-                            setHeritageData(heritageData => ({
-                                ...heritageData,
-                                heritage: {
-                                    ...heritageData.heritage,
-                                    heritage_type_id: parseInt(e.target.value, 10)
-                                }
-                            }))
-                        }
-                        className=" text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400 appearance-none">
-                        <option value={0}>--- Chọn loại di sản ---</option>
-                        {heritageTypeList.map((item, index) => (
-                            <option key={index} value={item.id}>{item.name}</option>
-                        ))}
-                    </select>
-                    {heritageErrors.heritage_type_id &&
-                        <p className="text-red-500 mb-6 text-sm font-semibold">
-                            <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
-                            {heritageErrors.heritage_type_id}
-                        </p>
-                    }
-
-                    <h2 className="font-semibold text-sm text-teal-500">
-                        Hình thức di sản
-                    </h2>
-                    <select
-                        name='heritage_category_id'
-                        value={heritageData.heritage.heritage_category_id}
-                        required
-                        onChange={e =>
-                            setHeritageData(heritageData => ({
-                                ...heritageData,
-                                heritage: {
-                                    ...heritageData.heritage,
-                                    heritage_category_id: parseInt(e.target.value, 10)
-
-                                }
-                            }))
-                        }
-                        className=" text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400 appearance-none">
-                        <option value={0}>--- Chọn hình thức di sản ---</option>
-                        {heritageCategoryList.map((item, index) => (
-                            <option key={index} value={item.id}>{item.name}</option>
-                        ))}
-                    </select>
-                    {heritageErrors.heritage_category_id &&
-                        <p className="text-red-500 mb-6 text-sm font-semibold">
-                            <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
-                            {heritageErrors.heritage_category_id}
-                        </p>
-                    }
-
-                    <h2 className="font-semibold text-sm text-teal-500">
-                        Địa điểm
-                    </h2>
-                    <select
-                        name='location_id'
-                        value={heritageData.heritage.location_id}
-                        required
-                        onChange={e =>
-                            setHeritageData(heritageData => ({
-                                ...heritageData,
-                                heritage: {
-                                    ...heritageData.heritage,
-                                    location_id: parseInt(e.target.value, 10)
-                                }
-                            }))
-                        }
-                        className=" text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400 appearance-none">
-                        <option value={0}>--- Chọn địa điểm ---</option>
-                        {locationList.map((item, index) => (
-                            <option key={index} value={item.id}>{item.name}</option>
-                        ))}
-                    </select>
-                    {heritageErrors.location_id &&
-                        <p className="text-red-500 mb-6 text-sm font-semibold">
-                            <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
-                            {heritageErrors.location_id}
-                        </p>
-                    }
-
-                    <h2 className="font-semibold text-sm text-teal-500">
-                        Đơn vị quản lý
-                    </h2>
-                    <select
-                        name='management_unit_id'
-                        value={heritageData.heritage.management_unit_id}
-                        required
-                        onChange={e =>
-                            setHeritageData(heritageData => ({
-                                ...heritageData,
-                                heritage: {
-                                    ...heritageData.heritage,
-                                    management_unit_id: parseInt(e.target.value, 10)
-
-                                }
-                            }))
-                        }
-                        className=" text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400 appearance-none">
-                        <option value={0}>--- Chọn đơn vị quản lý ---</option>
-                        {managementUnitList.map((item, index) => (
-                            <option key={index} value={item.id}>{item.name}</option>
-                        ))}
-                    </select>
-                    {heritageErrors.management_unit_id &&
-                        <p className="text-red-500 mb-6 text-sm font-semibold">
-                            <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
-                            {heritageErrors.management_unit_id}
-                        </p>
-                    }
-
-                    <h2 className="font-semibold text-sm text-teal-500">
-                        Niên đại
-                    </h2>
-                    <input
-                        name="time"
-                        required
-                        type="text"
-                        value={heritageData.heritage.time || ''}
-                        onChange={e =>
-                            setHeritageData(heritageData => ({
-                                ...heritageData,
-                                heritage: {
-                                    ...heritageData.heritage,
-                                    time: e.target.value,
-                                }
-                            }))
-                        }
-                        placeholder="Nhập thời gian"
-                        className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400" />
-                    {heritageErrors.time &&
-                        <p className="text-red-500 mb-6 text-sm font-semibold">
-                            <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
-                            {heritageErrors.time}
-                        </p>
-                    }
-
-                    <h2 className="font-semibold text-sm text-teal-500">
-                        Mô tả ngắn
-                    </h2>
-                    <textarea
-                        name="short_description"
-                        required
-                        type="text"
-                        value={heritageData.heritage.short_description || ''}
-                        onChange={e =>
-                            setHeritageData(heritageData => ({
-                                ...heritageData,
-                                heritage: {
-                                    ...heritageData.heritage,
-                                    short_description: e.target.value
-                                }
-                            }))
-                        }
-                        placeholder="Nhập mô tả chi tiết"
-                        className="description mb-4 sec h-36 text-black placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400" spellcheck="false" ></textarea>
-                    {heritageErrors.short_description &&
-                        <p className="text-red-500 mb-6 text-sm font-semibold">
-                            <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
-                            {heritageErrors.short_description}
-                        </p>
-                    }
-
-
-
-                    <h2 className="font-semibold text-sm text-teal-500">
-                        Video
-                    </h2>
-                    <input
-                        name="video_url"
-                        required
-                        type="text"
-                        value={heritageData.heritage.video_url || ''}
-                        onChange={e =>
-                            setHeritageData(heritageData => ({
-                                ...heritageData,
-                                heritage: {
-                                    ...heritageData.heritage,
-                                    video_url: e.target.value,
-                                }
-                            }))
-                        }
-                        placeholder="Nhập link video"
-                        className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400" />
-
-                    <h2 className="font-semibold text-sm text-teal-500">
-                        Ảnh 360 độ
-                    </h2>
-                    <input
-                        name="image_360_url"
-                        required
-                        type="text"
-                        value={heritageData.heritage.image_360_url || ''}
-                        onChange={e =>
-                            setHeritageData(heritageData => ({
-                                ...heritageData,
-                                heritage: {
-                                    ...heritageData.heritage,
-                                    image_360_url: e.target.value,
-                                }
-                            }))
-                        }
-                        placeholder="Nhập link ảnh 360 độ"
-                        className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400" />
-
-
-
-                    {/* Đoan mô tả ============================================================================================================*/}
-                    <div className="flex items-center justify-center mt-4">
-                        <div className="h-0.5 flex-grow bg-red-500 rounded-full" />
-                        <h2 className="px-5 font-semibold text-base text-red-500 text-center">Phần mô tả</h2>
-                        <div className="h-0.5 flex-grow bg-red-500 rounded-full" />
-                    </div>
-                    <ul className="bg-amber-50 rounded-xl py-5 px-10 space-y-1 my-2 text-gray-500 list-disc font-semibold text-xs ">
-                        <li>
-                            <p>Phần mô tả của di sản được chia ra làm nhiều đoạn, mỗi đoạn bao gồm câu chủ đề, nội dung, hình ảnh và chú thích ảnh</p>
-                        </li>
-                        <li>
-                            <p>Để lưu nhiều ảnh, bạn phải ngăn cách các link ảnh bằng dấu " , ". Tương tự với phần mô tả ảnh</p>
-                        </li>
-                        <li>
-                            <p>{`Để hiển thị ảnh trong phần nội dung bạn cần phải thêm <image> tại vị trí muốn hiển thị`}</p>
-                        </li>
-                        <li>
-                            <p>{`Để ngắt đoạn trong phần nội dung bạn cần phải thêm <br> tại vị trí muốn ngắt đoạn`}</p>
-                        </li>
-                    </ul>
-
-                    {heritageData.paragraphs.map((paragraph, index) => {
-                        const ref = textareaRefs[index] || addTextarea();
-                        return (
-                            <div key={index} className="relative bg-gray-50 my-5 px-10 py-5 rounded-xl shadow-md">
-                                <p className="absolute top-0 right-0 text-white text-xs rounded-bl-xl rounded-tr-xl font-semibold px-4 py-2 bg-teal-500">Đoạn thứ {index + 1}</p>
-                                <h2 className="font-semibold text-sm text-teal-500">Tiêu đề</h2>
-                                <input
-                                    name="title"
-                                    required
-                                    type="text"
-                                    value={paragraph.title}
-                                    placeholder="Nhập câu chủ đề"
-                                    onChange={(e) => handleParagraphChange(index, e)}
-                                    className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400" />
-                                {paragraphErrors[index] && paragraphErrors[index].paragraphs_title &&
-                                    <p className="text-red-500 mb-6 text-sm font-semibold">
-                                        <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
-                                        {paragraphErrors[index].paragraphs_title}
-                                    </p>
-                                }
-
-                                <h2 className="font-semibold text-sm text-teal-500">
-                                    Hình ảnh
-                                </h2>
-                                <textarea
-                                    name="image_url"
-                                    required
-                                    value={paragraph.image_url}
-                                    placeholder="Nhập link ảnh"
-                                    rows="3"
-                                    onChange={(e) => handleParagraphChange(index, e)}
-                                    className="text-black mb-2 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400" />
-
-                                {!isEmptyOrSpaces(paragraph.image_url) && <>
-                                    <p className="text-gray-600 mb-4 text-center">Ảnh hiện tại</p>
-                                    <div className="mb-4">
-                                        <div className={splitImageUrls(paragraph.image_url).length > 1 && "w-full h-auto mb-4 grid grid-cols-3 gap-x-4 gap-y-4"}>
-                                            {splitImageUrls(paragraph.image_url).map((imageUrl, index) => (
-                                                <img
-                                                    key={index}
-                                                    src={imageUrl}
-                                                    className="rounded-lg"
-                                                    alt={`Ảnh thứ ${index + 1}`}
-                                                />
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                </>}
-
-                                <h2 className="font-semibold text-sm text-teal-500">Mô tả ảnh</h2>
-                                <textarea
-                                    name="image_description"
-                                    required
-                                    value={paragraph.image_description}
-                                    placeholder="Nhập mô tả ảnh"
-                                    rows="3"
-                                    onChange={(e) => handleParagraphChange(index, e)}
-                                    className="text-black mb-2 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400" />
-
-                                <h2 className="font-semibold text-sm text-teal-500">Nội dung</h2>
-                                <textarea
-                                    ref={ref}
-                                    name="description"
-                                    required
-                                    value={paragraph.description}
-                                    placeholder="Nhập nội dung"
-                                    rows="5"
-                                    onChange={(e) => handleParagraphChange(index, e)}
-                                    className="text-black mb-2 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400" />
-                                {paragraphErrors[index] && paragraphErrors[index].paragraphs_description &&
-                                    <p className="text-red-500 mb-6 text-sm font-semibold">
-                                        <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
-                                        {heritageErrors.paragraphs_description}
-                                    </p>
-                                }
-                                {console.log(paragraphErrors)}
-
-                                <div className="flex items-center justify-end">
-                                    <button onClick={() => addString('<image>', index)} className="btn ml-2 rounded-md transition duration-300 ease-in-out cursor-pointer hover:bg-emerald-700 bg-emerald-500 p-2 px-3 font-semibold text-white text-xs">
-                                        Thêm image
-                                    </button>
-                                    <button onClick={() => addString('<br>', index)} className="btn ml-2 rounded-md transition duration-300 ease-in-out cursor-pointer hover:bg-amber-500 bg-amber-400 p-2 px-3 font-semibold text-white text-xs">
-                                        Thêm line break
-                                    </button>
-                                    <button onClick={() => deleteParagraph(index)} className="btn ml-2 rounded-md transition duration-300 ease-in-out cursor-pointer hover:bg-red-600 bg-red-500 p-2 px-3 font-semibold text-white text-xs">
-                                        Xóa
-                                    </button>
-                                </div>
-                            </div>
-                        )
-                    })}
-
-                    <div className="flex items-center justify-center my-4">
-                        <button onClick={addParagraph} className="btn rounded-full transition duration-300 ease-in-out cursor-pointer hover:bg-indigo-600 bg-white-500 p-2 px-5 text-sm font-semibold text-indigo-500 hover:text-white border border-2 border-indigo-500 hover:border-indigo-600">
-                            Thêm đoạn văn
-                        </button>
-                    </div>
-
-
-                    <div className="buttons flex">
-                        <hr className="mt-4" />
-                        <Link to="/admin/dashboard/all-heritage" className="btn ml-auto rounded-md transition duration-300 ease-in-out cursor-pointer hover:bg-gray-500 p-2 px-5 font-semibold hover:text-white text-gray-500">
-                            Hủy
-                        </Link>
-                        <button id="notification_buttonmodal" onClick={() => { handleSubmit() }} type="submit" className="btn ml-2 rounded-md transition duration-300 ease-in-out cursor-pointer !hover:bg-indigo-700 !bg-indigo-500 p-2 px-5 font-semibold text-white">
-                            {mainText.buttonText}
-                        </button>
-                    </div>
-
-                    <NotificationModal mainAction={maintAction} isSuccess={successFlag} isContinue={childToParent} type="heritage" />
-                </div>
-
+  return (
+    <main>
+      <div className="mt-12 px-4">
+        <div className="bg-white editor mx-auto flex w-10/12 max-w-2xl flex-col p-6 text-gray-800 shadow-lg mb-12 rounded-lg border-t-4 border-purple-400">
+          <div className="flex mb-4 items-center space-x-5">
+            <div className="h-14 w-14 bg-yellow-200 rounded-full flex flex-shrink-0 justify-center items-center text-yellow-500 text-2xl font-mono">
+              i
             </div>
-        </main>
-    );
-}
+            <div className="block pl-2 font-semibold text-xl self-start text-gray-700">
+              <h2 className="leading-relaxed">{mainText.headingText}</h2>
+              <p className="text-sm text-gray-500 font-normal leading-relaxed">
+                Vui lòng điền vào các ô bên dưới
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-center my-4">
+            <div className="h-0.5 flex-grow bg-red-500 rounded-full" />
+            <h2 className="px-5 font-semibold text-base text-red-500 text-center">
+              Phần nhập bắt buộc
+            </h2>
+            <div className="h-0.5 flex-grow bg-red-500 rounded-full" />
+          </div>
+
+          {/* --------------------------------------------------------------------------------- */}
+          <h2 className="font-semibold text-sm text-teal-500">
+            Loại khách hàng
+          </h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-2 mb-4 mt-2">
+            <label>
+              <input
+                type="radio"
+                value={"1"}
+                onChange={(e) => 
+                  setCustomer((prevData) => ({
+                    ...prevData,
+                    CustomerType: e.target.value,
+                  }))
+                }
+                class="peer hidden"
+                name="CUSTOMER_TYPE_NAME_VIET"
+              />
+
+              <div class="hover:bg-gray-50 flex items-center justify-between px-4 py-2.5 border-2 rounded-lg cursor-pointer border-gray-200 group peer-checked:border-blue-500">
+                <h2 class="font-medium text-gray-700 group-[.peer:checked+&]:text-blue-500">
+                  Nội địa
+                </h2>
+                <FontAwesomeIcon
+                  icon={faCheckCircle}
+                  className="text-lg text-blue-600 invisible group-[.peer:checked+&]:visible"
+                />
+              </div>
+            </label>
+
+            <label>
+              <input
+                type="radio"
+                value={"2"}
+                onChange={(e) => 
+                  setCustomer((prevData) => ({
+                  ...prevData,
+                  CustomerType: e.target.value,
+                }))}
+                class="peer hidden"
+                name="CUSTOMER_TYPE_NAME_VIET"
+              />
+
+              <div class="hover:bg-gray-50 flex items-center justify-between px-4 py-2.5 border-2 rounded-lg cursor-pointer border-gray-200 group peer-checked:border-blue-500">
+                <h2 class="font-medium text-gray-700 group-[.peer:checked+&]:text-blue-500">
+                  Nước ngoài
+                </h2>
+                <FontAwesomeIcon
+                  icon={faCheckCircle}
+                  className="text-lg text-blue-600 invisible group-[.peer:checked+&]:visible"
+                />
+              </div>
+            </label>
+          </div>
+          {customerErrors.CustomerType && (
+            <p className="text-red-500 mb-6 text-sm font-semibold">
+              <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
+              {customerErrors.CustomerType}
+            </p>
+          )}
+
+          {/* --------------------------------------------------------------------------------- */}
+          <h2 className="font-semibold text-sm text-teal-500">
+            Phân loại khách hàng
+          </h2>
+          <select
+            name="CategoryCD"
+            value={customer.CategoryCD}
+            required
+            onChange={(e) => {
+              setCustomer((prevData) => ({
+                ...prevData,
+                CategoryCD: e.target.value,
+              }));
+
+              CheckTaxCode(e.target.value);
+            }}
+            className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400 appearance-none"
+          >
+            <option value={0}>--- Chọn phân loại khách hàng ---</option>
+            {customerTypeList.map((item, index) => (
+              <option key={index} value={item.FIELD_VALUE}>
+                {item.DESCFIELD}
+              </option>
+            ))}
+          </select>
+          {customerErrors.CategoryCD && (
+            <p className="text-red-500 mb-6 text-sm font-semibold">
+              <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
+              {customerErrors.CategoryCD}
+            </p>
+          )}
+
+          {/* --------------------------------------------------------------------------------- */}
+          <h2 className="font-semibold text-sm text-teal-500">
+            Tên khách hàng
+          </h2>
+          <input
+            name="CustomerNM"
+            required
+            type="text"
+            value={customer.CustomerNM || ""}
+            onChange={(e) =>
+              setCustomer((prevData) => ({
+                ...prevData,
+                CustomerNM: e.target.value,
+              }))
+            }
+            placeholder="Nhập tên khách hàng"
+            className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
+          />
+          {customerErrors.CustomerNM && (
+            <p className="text-red-500 mb-6 text-sm font-semibold">
+              <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
+              {customerErrors.CustomerNM}
+            </p>
+          )}
+
+          {/* --------------------------------------------------------------------------------- */}
+          <h2 className="font-semibold text-sm text-teal-500">
+            Tên khách hàng (KOR/Tiếng Hàn)
+          </h2>
+          <input
+            name="CustomerNM"
+            required
+            type="text"
+            value={customer.CustomerNM_KOR || ""}
+            onChange={(e) =>
+              setCustomer((prevData) => ({
+                ...prevData,
+                CustomerNM_KOR: e.target.value,
+              }))
+            }
+            placeholder="Nhập tên khách hàng (KOR/Tiếng Hàn)"
+            className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
+          />
+          {customerErrors.CustomerNM_KOR && (
+            <p className="text-red-500 mb-6 text-sm font-semibold">
+              <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
+              {customerErrors.CustomerNM_KOR}
+            </p>
+          )}
+
+          {/* --------------------------------------------------------------------------------- */}
+          <h2 className="font-semibold text-sm text-teal-500">
+            Tên khách hàng (ENG/Tiếng Anh)
+          </h2>
+          <input
+            name="CustomerNM_EN"
+            required
+            type="text"
+            value={customer.CustomerNM_EN || ""}
+            onChange={(e) =>
+              setCustomer((prevData) => ({
+                ...prevData,
+                CustomerNM_EN: e.target.value,
+              }))
+            }
+            placeholder="Nhập tên khách hàng (ENG/Tiếng Anh)"
+            className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
+          />
+          {customerErrors.CustomerNM_EN && (
+            <p className="text-red-500 mb-6 text-sm font-semibold">
+              <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
+              {customerErrors.CustomerNM_EN}
+            </p>
+          )}
+
+          {/* --------------------------------------------------------------------------------- */}
+          {hasTaxCode === true && (
+            <>
+              <h2 className="font-semibold text-sm text-teal-500">
+                Mã số thuế
+              </h2>
+              <input
+                name="TaxCD"
+                required
+                type="number"
+                value={customer.TaxCD || ""}
+                onChange={(e) =>
+                  setCustomer((prevData) => ({
+                    ...prevData,
+                    TaxCD: e.target.value,
+                  }))
+                }
+                placeholder="Nhập mã số thuế"
+                className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
+              />
+              {customerErrors.TaxCD && (
+                <p className="text-red-500 mb-6 text-sm font-semibold">
+                  <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
+                  {customerErrors.TaxCD}
+                </p>
+              )}
+            </>
+          )}
+
+          {/* --------------------------------------------------------------------------------- */}
+          <h2 className="font-semibold text-sm text-teal-500">Địa chỉ</h2>
+          <input
+            name="Address"
+            required
+            type="text"
+            value={customer.Address || ""}
+            onChange={(e) =>
+              setCustomer((prevData) => ({
+                ...prevData,
+                Address: e.target.value,
+              }))
+            }
+            placeholder="Nhập địa chỉ"
+            className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
+          />
+          {customerErrors.Address && (
+            <p className="text-red-500 mb-6 text-sm font-semibold">
+              <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
+              {customerErrors.Address}
+            </p>
+          )}
+
+          {/* --------------------------------------------------------------------------------- */}
+          <h2 className="font-semibold text-sm text-teal-500">
+            Lưu ý khách hàng
+          </h2>
+          <input
+            name="Note"
+            required
+            type="text"
+            value={customer.Note || ""}
+            onChange={(e) =>
+              setCustomer((prevData) => ({
+                ...prevData,
+                Note: e.target.value,
+              }))
+            }
+            placeholder="Nhập lưu ý"
+            className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
+          />
+          {customerErrors.Note && (
+            <p className="text-red-500 mb-6 text-sm font-semibold">
+              <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
+              {customerErrors.Note}
+            </p>
+          )}
+
+          {/* --------------------------------------------------------------------------------- */}
+          <h2 className="font-semibold text-sm text-teal-500">
+            Cá nhân cư trú
+          </h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-2 mb-4 mt-2">
+            <label>
+              <input
+                type="radio"
+                value={"1"}
+                onChange={(e) =>
+                  setCustomer((prevData) => ({
+                    ...prevData,
+                    Individual: e.target.value,
+                  }))
+                }
+                class="peer hidden"
+                name="Individual"
+              />
+
+              <div class="hover:bg-gray-50 flex items-center justify-between px-4 py-2.5 border-2 rounded-lg cursor-pointer border-gray-200 group peer-checked:border-blue-500">
+                <h2 class="font-medium text-gray-700 group-[.peer:checked+&]:text-blue-500">
+                  Có
+                </h2>
+                <FontAwesomeIcon
+                  icon={faCheckCircle}
+                  className="text-lg text-blue-600 invisible group-[.peer:checked+&]:visible"
+                />
+              </div>
+            </label>
+
+            <label>
+              <input
+                type="radio"
+                value={"0"}
+                onChange={(e) =>
+                  setCustomer((prevData) => ({
+                    ...prevData,
+                    Individual: e.target.value,
+                  }))
+                }
+                class="peer hidden"
+                name="Individual"
+              />
+
+              <div class="hover:bg-gray-50 flex items-center justify-between px-4 py-2.5 border-2 rounded-lg cursor-pointer border-gray-200 group peer-checked:border-blue-500">
+                <h2 class="font-medium text-gray-700 group-[.peer:checked+&]:text-blue-500">
+                  Không
+                </h2>
+                <FontAwesomeIcon
+                  icon={faCheckCircle}
+                  className="text-lg text-blue-600 invisible group-[.peer:checked+&]:visible"
+                />
+              </div>
+            </label>
+          </div>
+          {customerErrors.Individual && (
+              <p className="text-red-500 mb-6 text-sm font-semibold">
+                <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
+                {customerErrors.Individual}
+              </p>
+            )}
+
+          <div className=" rounded-lg py-6 px-8 bg-gray-100 mb-4">
+            {/* --------------------------------------------------------------------------------- */}
+            <h2 className="font-semibold text-sm text-teal-500">Quốc tịch</h2>
+            <input
+              name="Nationality"
+              required
+              type="text"
+              value={customer.Nationality || ""}
+              onChange={(e) =>
+                setCustomer((prevData) => ({
+                  ...prevData,
+                  Nationality: e.target.value,
+                }))
+              }
+              placeholder="Nhập quốc tịch"
+              className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
+            />
+            {customerErrors.Nationality && (
+              <p className="text-red-500 mb-6 text-sm font-semibold">
+                <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
+                {customerErrors.Nationality}
+              </p>
+            )}
+
+            {/* --------------------------------------------------------------------------------- */}
+            <h2 className="font-semibold text-sm text-teal-500">CMND/CCCD</h2>
+            <input
+              name="IDNumber"
+              required
+              type="number"
+              value={customer.IDNumber || ""}
+              onChange={(e) =>
+                setCustomer((prevData) => ({
+                  ...prevData,
+                  IDNumber: e.target.value
+                }))
+              }
+              placeholder="Nhập CMND/CCCD"
+              className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
+            />
+            {customerErrors.IDNumber && (
+              <p className="text-red-500 mb-6 text-sm font-semibold">
+                <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
+                {customerErrors.IDNumber}
+              </p>
+            )}
+
+            {/* --------------------------------------------------------------------------------- */}
+            <h2 className="font-semibold text-sm text-teal-500">Nơi cấp</h2>
+            <input
+              name="PlaceIssue"
+              required
+              type="text"
+              value={customer.PlaceIssue || ""}
+              onChange={(e) =>
+                setCustomer((prevData) => ({
+                  ...prevData,
+                  PlaceIssue: e.target.value,
+                }))
+              }
+              placeholder="Nhập nơi cấp"
+              className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
+            />
+            {customerErrors.PlaceIssue && (
+              <p className="text-red-500 mb-6 text-sm font-semibold">
+                <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
+                {customerErrors.PlaceIssue}
+              </p>
+            )}
+
+            {/* --------------------------------------------------------------------------------- */}
+            <h2 className="font-semibold text-sm text-teal-500">Ngày cấp</h2>
+            <input
+              name="DateIssue"
+              required
+              type="text"
+              value={customer.DateIssue || ""}
+              onChange={(e) =>
+                setCustomer((prevData) => ({
+                  ...prevData,
+                  DateIssue: e.target.value,
+                }))
+              }
+              placeholder="Nhập ngày cấp"
+              className="mb-4 text-black placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
+            />
+            {customerErrors.DateIssue && (
+              <p className="text-red-500 text-sm font-semibold">
+                <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
+                {customerErrors.DateIssue}
+              </p>
+            )}
+          </div>
+
+          {/* --------------------------------------------------------------------------------- */}
+          <div className="flex items-center justify-center my-4">
+            <div className="h-0.5 flex-grow bg-red-500 rounded-full" />
+            <h2 className="px-5 font-semibold text-base text-red-500 text-center">
+              Phần nhập bổ sung
+            </h2>
+            <div className="h-0.5 flex-grow bg-red-500 rounded-full" />
+          </div>
+
+          {/* --------------------------------------------------------------------------------- */}
+          <h2 className="font-semibold text-sm text-teal-500">Mã khách hàng</h2>
+          <input
+            name="CustomerUserCD"
+            required
+            type="text"
+            value={customer.CustomerUserCD || ""}
+            onChange={(e) =>
+              setCustomer((prevData) => ({
+                ...prevData,
+                CustomerUserCD: e.target.value,
+              }))
+            }
+            placeholder="Nhập mã khách hàng"
+            className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
+          />
+          {customerErrors.CustomerUserCD && (
+            <p className="text-red-500 mb-6 text-sm font-semibold">
+              <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
+              {customerErrors.CustomerUserCD}
+            </p>
+          )}
+
+          {/* --------------------------------------------------------------------------------- */}
+          <h2 className="font-semibold text-sm text-teal-500">
+            Ngân hàng
+            <span className="font-semibold text-xs text-gray-500 ml-2">
+            {bankList.length > 0 ?`(Các mã có thể nhập: ${bankList[0].BankCD || 0}-${bankList[bankList.length - 1].BankCD || 0})` : "(Đang lấy dữ liệu...)"}
+          </span>
+            </h2>
+       
+          <div className="sm:block md:flex lg:flex items-center justify-between w-full gap-4">
+            <input
+              name="BankCD"
+              required
+              type="text"
+              value={customer.BankCD || ""}
+              onChange={(e) => {
+                setCustomer((prevData) => ({
+                  ...prevData,
+                  BankCD: e.target.value,
+                }));
+
+                searchByBankCode(e.target.value);
+              }}
+              placeholder="Nhập mã ngân hàng"
+              className="text-black mb-4 placeholder-gray-600 px-4 py-2.5 mt-2 text-base sm:w-full md:max-w-56 lg:max-w-56 transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
+            />
+
+            <input
+              name="BankNM"
+              required
+              type="text"
+              value={customer.BankNM || "(Vui lòng nhập mã ngân hàng)"}
+              disabled
+              className="text-black mb-4 placeholder-gray-600 px-4 py-2.5 mt-2 text-base flex-1 sm:w-full md:max-w-full lg:max-w-full transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
+            />
+          </div>
+
+          {/* --------------------------------------------------------------------------------- */}
+          <h2 className="font-semibold text-sm text-teal-500">Số điện thoại</h2>
+          <input
+            name="Tel"
+            required
+            type="text"
+            value={customer.Tel || ""}
+            onChange={(e) =>
+              setCustomer((prevData) => ({
+                ...prevData,
+                Tel: e.target.value,
+              }))
+            }
+            placeholder="Nhập số điện thoại"
+            className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
+          />
+          {customerErrors.Tel && (
+            <p className="text-red-500 mb-6 text-sm font-semibold">
+              <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
+              {customerErrors.Tel}
+            </p>
+          )}
+
+          {/* --------------------------------------------------------------------------------- */}
+          <h2 className="font-semibold text-sm text-teal-500">Email</h2>
+
+          <div className="flex items-center w-full bg-gray-200 rounded-lg mt-2 mb-4">
+            <div className="w-full">
+              <input
+                type="text"
+                className="text-black placeholder-gray-600 w-full px-4 py-2.5 text-base transition duration-500 ease-in-out transform border-transparent rounded-l-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
+                placeholder="Nhập email"
+                value={currentEmail || ""}
+                onChange={(e) => {
+                  setCurrentEmail(e.target.value);
+                }}
+              />
+            </div>
+            <div>
+              <button
+                onClick={() => handleAddEmail(currentEmail)}
+                className="bg-teal-500 w-12 h-12 text-white rounded-r-lg hover:bg-teal-400 transition duration-75"
+              >
+                <FontAwesomeIcon icon={faPlus} />
+              </button>
+            </div>
+          </div>
+
+          {emailList.map((email, index) => (
+            <div
+              key={index}
+              className="flex items-center w-full bg-gray-200 rounded-lg mt-2 mb-4"
+            >
+              <div className="w-full">
+                <input
+                  type="text"
+                  className="text-black placeholder-gray-600 w-full px-4 py-2.5 text-base transition duration-500 ease-in-out transform border-transparent rounded-l-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
+                  placeholder="Nhập email"
+                  value={email || ""}
+                  onChange={(e) => {
+                    handleUpdateEmail(e.target.value, index);
+                  }}
+                />
+              </div>
+              <div>
+                <button
+                  onClick={() => handleRemoveEmail(index)}
+                  className="bg-red-500 w-12 h-12 text-white rounded-r-lg hover:bg-red-400 transition duration-75"
+                >
+                  <FontAwesomeIcon icon={faMinus} />
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {customerErrors.Email && (
+            <p className="text-red-500 mb-6 text-sm font-semibold">
+              <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
+              {customerErrors.Email}
+            </p>
+          )}
+
+          {/* --------------------------------------------------------------------------------- */}
+          <h2 className="font-semibold text-sm text-teal-500">Fax</h2>
+          <input
+            name="Fax"
+            required
+            type="text"
+            value={customer.Fax || ""}
+            onChange={(e) =>
+              setCustomer((prevData) => ({
+                ...prevData,
+                Fax: e.target.value,
+              }))
+            }
+            placeholder="Nhập fax"
+            className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
+          />
+          {customerErrors.Fax && (
+            <p className="text-red-500 mb-6 text-sm font-semibold">
+              <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
+              {customerErrors.Fax}
+            </p>
+          )}
+
+          <div className="border-t-2 border-gray-200 mt-4 my-8"></div>
+          {/* --------------------------------------------------------------------------------- */}
+          <h2 className="font-semibold text-sm text-teal-500">Tên giám đốc</h2>
+          <input
+            name="OwnerNM"
+            required
+            type="text"
+            value={customer.OwnerNM || ""}
+            onChange={(e) =>
+              setCustomer((prevData) => ({
+                ...prevData,
+                OwnerNM: e.target.value,
+              }))
+            }
+            placeholder="Nhập tên giám đốc"
+            className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
+          />
+          {customerErrors.OwnerNM && (
+            <p className="text-red-500 mb-6 text-sm font-semibold">
+              <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
+              {customerErrors.OwnerNM}
+            </p>
+          )}
+
+          {/* --------------------------------------------------------------------------------- */}
+          <h2 className="font-semibold text-sm text-teal-500">
+            Số đăng ký kinh doanh
+          </h2>
+          <input
+            name="BRN"
+            required
+            type="text"
+            value={customer.BRN || ""}
+            onChange={(e) =>
+              setCustomer((prevData) => ({
+                ...prevData,
+                BRN: e.target.value,
+              }))
+            }
+            placeholder="Nhập số đăng ký kinh doanh"
+            className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
+          />
+          {customerErrors.BRN && (
+            <p className="text-red-500 mb-6 text-sm font-semibold">
+              <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
+              {customerErrors.BRN}
+            </p>
+          )}
+
+          {/* --------------------------------------------------------------------------------- */}
+          <h2 className="font-semibold text-sm text-teal-500">
+            HÌnh thức kinh doanh
+          </h2>
+          <input
+            name="BusinessType"
+            required
+            type="text"
+            value={customer.BusinessType || ""}
+            onChange={(e) =>
+              setCustomer((prevData) => ({
+                ...prevData,
+                BusinessType: e.target.value,
+              }))
+            }
+            placeholder="Nhập hình thức kinh doanh"
+            className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
+          />
+          {customerErrors.BusinessType && (
+            <p className="text-red-500 mb-6 text-sm font-semibold">
+              <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
+              {customerErrors.BusinessType}
+            </p>
+          )}
+
+          {/* --------------------------------------------------------------------------------- */}
+          <h2 className="font-semibold text-sm text-teal-500">
+            Loại hình kinh doanh
+          </h2>
+          <input
+            name="KindBusiness"
+            required
+            type="text"
+            value={customer.KindBusiness || ""}
+            onChange={(e) =>
+              setCustomer((prevData) => ({
+                ...prevData,
+                KindBusiness: e.target.value,
+              }))
+            }
+            placeholder="Nhập loại hình kinh doanh"
+            className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
+          />
+          {customerErrors.KindBusiness && (
+            <p className="text-red-500 mb-6 text-sm font-semibold">
+              <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
+              {customerErrors.KindBusiness}
+            </p>
+          )}
+
+          {/* --------------------------------------------------------------------------------- */}
+          <h2 className="font-semibold text-sm text-teal-500">Tên người mua</h2>
+          <input
+            name="BuyerNM"
+            required
+            type="text"
+            value={customer.BuyerNM || ""}
+            onChange={(e) =>
+              setCustomer((prevData) => ({
+                ...prevData,
+                BuyerNM: e.target.value,
+              }))
+            }
+            placeholder="Nhập tên người mua"
+            className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
+          />
+          {customerErrors.BuyerNM && (
+            <p className="text-red-500 mb-6 text-sm font-semibold">
+              <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
+              {customerErrors.BuyerNM}
+            </p>
+          )}
+
+          {/* --------------------------------------------------------------------------------- */}
+          <h2 className="font-semibold text-sm text-teal-500">Tra cứu tại</h2>
+          <input
+            name="InquiryIn"
+            required
+            type="text"
+            value={customer.InquiryIn || ""}
+            onChange={(e) =>
+              setCustomer((prevData) => ({
+                ...prevData,
+                InquiryIn: e.target.value,
+              }))
+            }
+            placeholder="Nhập địa chỉ tra cứu"
+            className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
+          />
+          {customerErrors.InquiryIn && (
+            <p className="text-red-500 mb-6 text-sm font-semibold">
+              <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
+              {customerErrors.InquiryIn}
+            </p>
+          )}
+
+          {/* --------------------------------------------------------------------------------- */}
+          <h2 className="font-semibold text-sm text-teal-500">
+            Thời hạn thanh toán
+          </h2>
+          <input
+            name="PaymentTerm"
+            required
+            type="text"
+            value={customer.PaymentTerm || ""}
+            onChange={(e) =>
+              setCustomer((prevData) => ({
+                ...prevData,
+                PaymentTerm: e.target.value,
+              }))
+            }
+            placeholder="Nhập thời hạn thanh toán"
+            className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
+          />
+          {customerErrors.PaymentTerm && (
+            <p className="text-red-500 mb-6 text-sm font-semibold">
+              <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
+              {customerErrors.PaymentTerm}
+            </p>
+          )}
+
+          <h2 className="font-semibold text-sm text-teal-500">
+            Thông tin nhận hàng
+          </h2>
+          {/* --------------------------------------------------------------------------------- */}
+          <div className="bg-gray-100 mt-2 rounded-lg py-6 px-8 mb-4">
+            {/* --------------------------------------------------------------------------------- */}
+            <h2 className="font-semibold text-sm text-teal-500">Tên</h2>
+            <input
+              name="CustomerReceive"
+              required
+              type="text"
+              value={customer.CustomerReceive || ""}
+              onChange={(e) =>
+                setCustomer((prevData) => ({
+                  ...prevData,
+                  CustomerReceive: e.target.value,
+                }))
+              }
+              placeholder="Nhập tên"
+              className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
+            />
+            {customerErrors.CustomerReceive && (
+              <p className="text-red-500 mb-6 text-sm font-semibold">
+                <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
+                {customerErrors.CustomerReceive}
+              </p>
+            )}
+
+            {/* --------------------------------------------------------------------------------- */}
+            <h2 className="font-semibold text-sm text-teal-500">Địa chỉ</h2>
+            <input
+              name="AddressReceive"
+              required
+              type="text"
+              value={customer.AddressReceive || ""}
+              onChange={(e) =>
+                setCustomer((prevData) => ({
+                  ...prevData,
+                  AddressReceive: e.target.value,
+                }))
+              }
+              placeholder="Nhập địa chỉ"
+              className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
+            />
+            {customerErrors.AddressReceive && (
+              <p className="text-red-500 mb-6 text-sm font-semibold">
+                <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
+                {customerErrors.AddressReceive}
+              </p>
+            )}
+
+            {/* --------------------------------------------------------------------------------- */}
+            <h2 className="font-semibold text-sm text-teal-500">Mã số thuế</h2>
+            <input
+              name="TaxCDReceive"
+              required
+              type="text"
+              value={customer.TaxCDReceive || ""}
+              onChange={(e) =>
+                setCustomer((prevData) => ({
+                  ...prevData,
+                  TaxCDReceive: e.target.value,
+                }))
+              }
+              placeholder="Nhập mã số thuế"
+              className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
+            />
+            {customerErrors.TaxCDReceive && (
+              <p className="text-red-500 mb-6 text-sm font-semibold">
+                <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
+                {customerErrors.TaxCDReceive}
+              </p>
+            )}
+          </div>
+
+          <div className="buttons flex mt-8">
+            <hr className="mt-4" />
+            <Link
+              to="/dashboard/all-customer"
+              className="btn ml-auto rounded-md transition duration-300 ease-in-out cursor-pointer hover:bg-gray-500 p-2 px-5 font-semibold hover:text-white text-gray-500"
+            >
+              Hủy
+            </Link>
+            <button
+              id="notification_buttonmodal"
+              onClick={() => {
+                handleSubmit();
+              }}
+              type="submit"
+              className="btn ml-2 rounded-md transition duration-300 ease-in-out cursor-pointer !hover:bg-indigo-700 !bg-indigo-500 p-2 px-5 font-semibold text-white"
+            >
+              {mainText.buttonText}
+            </button>
+          </div>
+
+          <NotificationModal
+            mainAction={maintAction}
+            isSuccess={successFlag}
+            message={messageAPI}
+            showLoading={showLoading}
+            isContinue={childToParent}
+            type="customer"
+          />
+        </div>
+      </div>
+    </main>
+  );
+};

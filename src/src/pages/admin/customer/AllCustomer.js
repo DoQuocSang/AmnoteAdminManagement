@@ -42,17 +42,35 @@ export default () => {
   const [showLoading, setShowLoading] = useState(true);
   const [deleteId, setDeleteId] = useState(0);
   const [toggleDelete, setToggleDelete] = useState(false);
+  const [checkedItems, setCheckedItems] = useState({});
+  const [customersToDelete, setCustomersToDelete] = useState([]);
+
+  // Tính thông số phân trang
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = customerList.slice(indexOfFirstItem, indexOfLastItem);
+
+  // Hàm xử lý chuyển trang
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   //Xử lý khi bấm xóa bên component con DeleteModal
   const childToParent = (isDelete) => {
-    if (isDelete === true && deleteId !== 0) {
-      setCustomerList(customerList.filter((item) => item.id !== deleteId));
+    if (isDelete === true && customersToDelete.length > 0) {
+      const filteredCustomers = customerList.filter(
+        (customer) => !checkedItems[customer.CUSTOMER_CD]
+      );
+      setCustomerList(filteredCustomers);
+      const resetCheckedItems = {};
+      filteredCustomers.forEach((customer) => {
+        resetCheckedItems[customer.CUSTOMER_CD] = false;
+      });
+      setCheckedItems(resetCheckedItems);
     }
-    console.log(customerList.length);
+    // console.log(customerList.length);
   };
 
   const handleRowClick = () => {
-    navigate("/admin/dashboard/update-customer");
+    navigate("/dashboard/update-customer");
   };
 
   useEffect(() => {
@@ -61,25 +79,35 @@ export default () => {
     // Xử lý logic
     getAllCustomer().then((data) => {
       if (data) {
-        setCustomerList(data.result);
+        setCustomerList(data.result.slice().reverse());
+
+        // Checkbox
+        const initialCheckedItems = {};
+        data.result.slice().reverse().forEach((customer) => {
+          initialCheckedItems[customer.CUSTOMER_CD] = false;
+        });
+        setCheckedItems(initialCheckedItems);
+        // console.log(initialCheckedItems);
       } else {
         setCustomerList([]);
       }
       setShowLoading(false);
-      console.log(data.result);
+      // console.log(data.result);
     });
   }, []);
 
-  // Logic to calculate pagination
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = customerList.slice(indexOfFirstItem, indexOfLastItem);
+  const handleCheckboxChange = (CUSTOMER_CD) => {
+    setCheckedItems((prevCheckedItems) => ({
+      ...prevCheckedItems,
+      [CUSTOMER_CD]: !prevCheckedItems[CUSTOMER_CD],
+    }));
+  };
 
-  // Change page
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
-
-  const handleDelete = (id) => {
-    setDeleteId(id);
+  const handleDelete = () => {
+    const customers = Object.keys(checkedItems).filter(
+      (key) => checkedItems[key]
+    );
+    setCustomersToDelete(customers);
   };
 
   const handleTogleDelete = () => {
@@ -103,34 +131,45 @@ export default () => {
                 </div>
                 <div className="flex-shrink-0"></div>
                 <div className="flex-shrink-0">
-                  <div className="flex justify-center items-center gap-2">
-                    
-                    {toggleDelete ? (
-                      <>
-                      <a
-                        onClick={() => alert("click")}
-                        className="cursor-pointer hidden transition duration-300 sm:inline-flex text-white bg-red-400 hover:bg-red-500 focus:ring-4 focus:ring-cyan-200 font-medium rounded-lg text-sm px-5 py-2.5 text-center items-center"
-                      >
-                        <FontAwesomeIcon
-                          icon={faTrash}
-                          className="text-base mr-3"
-                        />
-                        Xoá
-                      </a>
-                       <a
-                        onClick={handleTogleDelete}
-                        className="cursor-pointer hidden transition duration-300 sm:inline-flex text-white bg-gray-400 hover:bg-gray-500 focus:ring-4 focus:ring-cyan-200 font-medium rounded-lg text-sm px-5 py-2.5 text-center items-center"
-                      >
-                        <FontAwesomeIcon
-                          icon={faXmark}
-                          className="text-base mr-3"
-                        />
-                        Hủy
-                      </a>
-                      </>
-                    ) : (
-                      <>
-                       <Link to="/admin/dashboard/add-heritage">
+                  {/* section xóa */}
+                  <div
+                    className={
+                      toggleDelete
+                        ? "flex justify-center items-center gap-2"
+                        : "hidden flex justify-center items-center gap-2"
+                    }
+                  >
+                    <a
+                      onClick={handleDelete}
+                      className="delete_buttonmodal cursor-pointer hidden transition duration-300 sm:inline-flex text-white bg-red-400 hover:bg-red-500 focus:ring-4 focus:ring-cyan-200 font-medium rounded-lg text-sm px-5 py-2.5 text-center items-center"
+                    >
+                      <FontAwesomeIcon
+                        icon={faTrash}
+                        className="text-base mr-3"
+                      />
+                      Xoá
+                    </a>
+                    <a
+                      onClick={handleTogleDelete}
+                      className="cursor-pointer hidden transition duration-300 sm:inline-flex text-white bg-gray-400 hover:bg-gray-500 focus:ring-4 focus:ring-cyan-200 font-medium rounded-lg text-sm px-5 py-2.5 text-center items-center"
+                    >
+                      <FontAwesomeIcon
+                        icon={faXmark}
+                        className="text-base mr-3"
+                      />
+                      Hủy
+                    </a>
+                  </div>
+
+                  {/* Section thêm + toggle xóa */}
+                  <div
+                    className={
+                      toggleDelete
+                        ? "hidden flex justify-center items-center gap-2"
+                        : "flex justify-center items-center gap-2"
+                    }
+                  >
+                    <Link to="/dashboard/add-customer">
                       <a className="hidden transition duration-300 sm:inline-flex text-white bg-teal-400 hover:bg-teal-600 focus:ring-4 focus:ring-cyan-200 font-medium rounded-lg text-sm px-5 py-2.5 text-center items-center">
                         <FontAwesomeIcon
                           icon={faPlus}
@@ -139,18 +178,16 @@ export default () => {
                         Thêm
                       </a>
                     </Link>
-                      <a
-                        onClick={handleTogleDelete}
-                        className="cursor-pointer hidden transition duration-300 sm:inline-flex text-white bg-red-400 hover:bg-red-500 focus:ring-4 focus:ring-cyan-200 font-medium rounded-lg text-sm px-5 py-2.5 text-center items-center"
-                      >
-                        <FontAwesomeIcon
-                          icon={faTrash}
-                          className="text-base mr-3"
-                        />
-                        Xoá
-                      </a>
-                      </>
-                    )}
+                    <a
+                      onClick={handleTogleDelete}
+                      className="cursor-pointer hidden transition duration-300 sm:inline-flex text-white bg-red-400 hover:bg-red-500 focus:ring-4 focus:ring-cyan-200 font-medium rounded-lg text-sm px-5 py-2.5 text-center items-center"
+                    >
+                      <FontAwesomeIcon
+                        icon={faTrash}
+                        className="text-base mr-3"
+                      />
+                      Xoá
+                    </a>
                   </div>
                 </div>
               </div>
@@ -338,11 +375,19 @@ export default () => {
                                     <td className="p-4 whitespace-nowrap text-sm font-bold">
                                       <div class="inline-flex items-center">
                                         <label
-                                          class="relative flex cursor-pointer items-center rounded-full p-3"
+                                          class="relative flex cursor-pointer items-center rounded-full"
                                           data-ripple-dark="true"
                                         >
                                           <input
                                             type="checkbox"
+                                            checked={
+                                              checkedItems[item.CUSTOMER_CD]
+                                            }
+                                            onChange={() =>
+                                              handleCheckboxChange(
+                                                item.CUSTOMER_CD
+                                              )
+                                            }
                                             class="before:content[''] peer relative h-5 w-5 cursor-pointer appearance-none rounded-md border-2 border-gray-300 transition-all before:absolute before:top-2/4 before:left-2/4 before:block before:h-12 before:w-12 before:-translate-y-2/4 before:-translate-x-2/4 before:rounded-full before:bg-blue-gray-500 before:opacity-0 before:transition-opacity checked:border-red-500 checked:bg-red-500 checked:before:bg-red-500 hover:before:opacity-10"
                                           />
                                           <div class="pointer-events-none absolute top-2/4 left-2/4 -translate-y-2/4 -translate-x-2/4 text-white opacity-0 transition-opacity peer-checked:opacity-100">
@@ -463,9 +508,9 @@ export default () => {
                           itemsPerPage={itemsPerPage}
                         />
                         <DeleteModal
-                          deleteId={deleteId}
                           isDelete={childToParent}
-                          type="heritage"
+                          deleteItems={customersToDelete}
+                          type="customer"
                         />
                       </>
                     )}
