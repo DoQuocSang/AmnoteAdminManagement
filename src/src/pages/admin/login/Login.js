@@ -11,7 +11,6 @@ import { Login } from "services/LoginRepository";
 import LoadingApiGif from "../../../images/loading-api.gif";
 import Logo from "../../../images/ameinvoice.png";
 import { useDispatch } from "react-redux";
-import { loginSuccess } from "redux/actions/authActions";
 
 export default () => {
   document.title = "Đăng nhập Admin";
@@ -79,8 +78,6 @@ export default () => {
           sessionStorage.setItem("loggedInUsername", formData.username);
 
           sessionStorage.setItem("lag", formData.Lag);
-
-          dispatch(loginSuccess(data.access_token));
 
           setShowLoading(false);
           navigate("/dashboard");

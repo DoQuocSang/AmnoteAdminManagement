@@ -30,6 +30,8 @@ import { getAllCustomer } from "services/CustomerRepository";
 import Pagination from "../../../components/admin/pagination/Pagination";
 import { useNavigate } from "react-router-dom";
 import LoadingApiGif from "../../../images/loading-api-color.gif";
+import { useDispatch } from "react-redux";
+import { setData } from "redux/actions/actions";
 
 export default () => {
   document.title = "Quản lý khách hàng";
@@ -44,6 +46,7 @@ export default () => {
   const [toggleDelete, setToggleDelete] = useState(false);
   const [checkedItems, setCheckedItems] = useState({});
   const [customersToDelete, setCustomersToDelete] = useState([]);
+  const dispatch = useDispatch();
 
   // Tính thông số phân trang
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -69,8 +72,10 @@ export default () => {
     // console.log(customerList.length);
   };
 
-  const handleRowClick = () => {
-    navigate("/dashboard/update-customer");
+  const handleRowClick = (data) => {
+    // dispatch(setData(data));
+    sessionStorage.setItem('editItem', JSON.stringify(data));
+    navigate(`/dashboard/update-customer/${data.CUSTOMER_CD}`);
   };
 
   useEffect(() => {
@@ -363,7 +368,7 @@ export default () => {
                               {currentItems.map((item, index) => (
                                 <tr
                                   onClick={
-                                    toggleDelete ? () => {} : handleRowClick
+                                    toggleDelete ? () => {} : () => handleRowClick(item)
                                   }
                                   className={
                                     index % 2 !== 0
@@ -426,7 +431,7 @@ export default () => {
                                     {item.CUSTOMER_NM}
                                   </td>
                                   <td className="p-4 whitespace-nowrap text-sm">
-                                    {item.CUSTOMER_NM_ENG}
+                                    {item.CUSTOMER_NM_EN}
                                   </td>
                                   <td className="p-4 whitespace-nowrap text-sm">
                                     {item.CUSTOMER_NM_KOR}

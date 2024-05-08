@@ -18,6 +18,11 @@ export function addCustomer(
     return post_api(`http://localhost:3001/cors/api/CustomerInfo/insert`, formData);
 }
 
+export function updateCustomer(
+    formData
+    ) {
+    return post_api(`http://localhost:3001/cors/api/CustomerInfo/update`, formData);
+}
 
 export function deleteCustomer(
     CustomerCD = "00000",

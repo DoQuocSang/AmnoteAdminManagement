@@ -33,51 +33,62 @@ import { getHeritageWithDetailById } from "../../../services/HeritageRepository"
 import { addHeritageWithParagraphs } from "../../../services/HeritageRepository";
 import { putHeritageWithParagraphs } from "../../../services/HeritageRepository";
 import { splitImageUrls } from "../../../components/utils/Utils";
-import { addCustomer, getSelectTypeCustomer } from "services/CustomerRepository";
+import { addCustomer, getSelectTypeCustomer, updateCustomer } from "services/CustomerRepository";
 import { getAllBank } from "services/BankRepository";
+import { useSelector } from "react-redux";
 
 export default ({ type = "" }) => {
   document.title = "Thêm/Cập nhật khách hàng";
 
   let mainText = AddOrUpdateText(type, "khách hàng");
 
+  let storedEditItem = null;
+
+  let { id } = useParams();
+  id = id ?? 0;
+
+  let maintAction = "";
+  if (id === 0) {
+    maintAction = "thêm";
+    sessionStorage.removeItem('editItem')
+  } else {
+    maintAction = "cập nhật";
+    storedEditItem = JSON.parse(sessionStorage.getItem('editItem'));
+  }
+
+
   const initialState = {
-      Lag: sessionStorage.getItem("accessToken"),
-      CustomerCD: "",
+      Lag: sessionStorage.getItem("lag"),
+      CustomerCD: storedEditItem?.CUSTOMER_CD || "",
       // ----------------------------
-      Address: "",
-      CategoryCD: "",
-      CustomerType: "",
-      CustomerCD: "",
-      CustomerNM: "",
-      CustomerNM_EN: "",
-      CustomerNM_KOR: "",
-      Note: "",
-      Individual: "",
-      Nationality: "",
-      Email: "",
-      Lag: "",
-      BuyerNM: "",
-      // CustomerUserCD: "",
-      TaxCD: "",
-      BankCD: "",
-      OwnerNM: "",
-      BusinessType: "",
-      KindBusiness: "",
-      Fax: "",
-      ZipCD: "",
-      Tel: "",
-      IDNumber: "",
-      PlaceIssue:"",
-      DateIssue: "",
-      InquiryIn: "",
-      PaymentTerm: "",
-      CustomerReceive: "",
-      AddressReceive: "",
-      TaxCDReceive: "",
-      ID_Number: "",
-      PlaceIssue: "",
-      DateIssue: "",
+      Address: storedEditItem?.ADDRESS || "",
+      CategoryCD: storedEditItem?.CATEGORY_CD || "",
+      CustomerType: storedEditItem?.CUSTOMER_TYPE || "",
+      CustomerNM: storedEditItem?.CUSTOMER_NM || "",
+      CustomerNM_EN: storedEditItem?.CUSTOMER_NM_EN || "",
+      CustomerNM_KOR: storedEditItem?.CUSTOMER_NM_KOR || "",
+      Note: storedEditItem?.NOTE || "",
+      Individual: storedEditItem?.INDIVIDUAL || "",
+      Nationality: storedEditItem?.NATIONALITY || "",
+      Email: storedEditItem?.EMAIL || "",
+      BuyerNM: storedEditItem?.BUYER_NM || "",
+      CustomerUserCD: storedEditItem?.CUSTOMER_USER_CD || "",
+      TaxCD: storedEditItem?.TAX_CD || "",
+      BankCD: storedEditItem?.BANK_CD || "",
+      OwnerNM: storedEditItem?.OWNER_NM || "",
+      BusinessType: storedEditItem?.BUSINESS_TYPE || "",
+      KindBusiness: storedEditItem?.KIND_BUSINESS || "",
+      Fax: storedEditItem?.FAX || "",
+      Tel: storedEditItem?.TEL || "",
+      IDNumber: storedEditItem?.IDNUMBER || "",
+      PlaceIssue:storedEditItem?.PLACE_ISSUE || "",
+      DateIssue: storedEditItem?.DATE_ISSUE || "",
+      InquiryIn: storedEditItem?.INQUIRY_IN || "",
+      PaymentTerm: storedEditItem?.PAYMENT_TERM || "",
+      CustomerReceive: storedEditItem?.CUSTOMER_RECEIVE || "",
+      AddressReceive: storedEditItem?.ADDRESS_RECEIVE || "",
+      TaxCDReceive: storedEditItem?.TAX_CD_RECEIVE || "",
+      BankNM: "",
     },
     [customer, setCustomer] = useState(initialState);
 
@@ -91,22 +102,22 @@ export default ({ type = "" }) => {
   const [messageAPI, setMessageAPI] = useState("");
   const [showLoading, setShowLoading] = useState(false);
 
-  let { id } = useParams();
-  id = id ?? 0;
+  // const data = useSelector(state => state.data);
+  // console.log(data)
 
-  let maintAction = "";
-  if (id === 0) {
-    maintAction = "thêm";
-  } else {
-    maintAction = "cập nhật";
-  }
+
 
   //console.log(id);
   useEffect(() => {
     document.title = "Thêm/ cập nhật khách hàng";
     
     if (id !== 0) {
-    }
+      console.log(storedEditItem)
+      console.log(customer)
+      if(customer.Email.trim() !== ""){
+        setEmailList(customer.Email.split(";"));
+      }
+    } 
 
     getSelectTypeCustomer().then((data) => {
       if (data) {
@@ -123,10 +134,9 @@ export default ({ type = "" }) => {
       } else {
         setBankList(data.result);
       }
-      // console.log(data.result);
     });
   }, []);
-  //console.log(heritage)
+
 
   //validate lỗi bổ trống
   const validateAllCustomerInput = () => {
@@ -232,11 +242,14 @@ export default ({ type = "" }) => {
   // };
 
   const searchByBankCode = (BankCD) => {
-    const bank = bankList.find((bank) => bank.BankCD === BankCD);
+    const bank = bankList.find((bank) => bank.BANK_CD === BankCD);
     setCustomer((prevData) => ({
       ...prevData,
-      BankNM: bank ? bank.BankNM : "Không tìm thấy ngân hàng",
+      BankNM: bank ? bank.BANK_NM : "Không tìm thấy ngân hàng",
     }));
+    // bankList.map((item, index) => (
+    //   console.log(item.)
+    // ))
   };
 
   const handleAddEmail = (email) => {
@@ -289,10 +302,19 @@ export default ({ type = "" }) => {
             }
         });
       } else {
-        // putHeritageWithParagraphs(id, heritageData).then(data => {
-        //     SetSuccessFlag(data);
-        //     //console.log(data);
-        // });
+        updateCustomer(customer).then(data => {
+          // SetSuccessFlag(true);
+          if(data.status === "success"){
+            SetSuccessFlag(true);
+            setMessageAPI(data.messages[0])
+            setShowLoading(false);
+            // console.log(data.result);
+          } else if (data.status === "error"){
+            SetSuccessFlag(false);
+            setMessageAPI(data.messages[0]);
+            setShowLoading(false);
+          }
+      });
       }
     }else{
       setMessageAPI("Vui lòng kiểm tra lại các ô nhập liệu");
@@ -344,6 +366,7 @@ export default ({ type = "" }) => {
               <input
                 type="radio"
                 value={"1"}
+                checked={customer.CustomerType === "1"} 
                 onChange={(e) => 
                   setCustomer((prevData) => ({
                     ...prevData,
@@ -369,6 +392,7 @@ export default ({ type = "" }) => {
               <input
                 type="radio"
                 value={"2"}
+                checked={customer.CustomerType === "2"} 
                 onChange={(e) => 
                   setCustomer((prevData) => ({
                   ...prevData,
@@ -589,6 +613,7 @@ export default ({ type = "" }) => {
               <input
                 type="radio"
                 value={"1"}
+                checked={customer.Individual === "1"} 
                 onChange={(e) =>
                   setCustomer((prevData) => ({
                     ...prevData,
@@ -614,6 +639,7 @@ export default ({ type = "" }) => {
               <input
                 type="radio"
                 value={"0"}
+                checked={customer.Individual === "0"} 
                 onChange={(e) =>
                   setCustomer((prevData) => ({
                     ...prevData,
@@ -671,7 +697,7 @@ export default ({ type = "" }) => {
             <input
               name="IDNumber"
               required
-              type="number"
+              type="text"
               value={customer.IDNumber || ""}
               onChange={(e) =>
                 setCustomer((prevData) => ({
@@ -772,7 +798,7 @@ export default ({ type = "" }) => {
           <h2 className="font-semibold text-sm text-teal-500">
             Ngân hàng
             <span className="font-semibold text-xs text-gray-500 ml-2">
-            {bankList.length > 0 ?`(Các mã có thể nhập: ${bankList[0].BankCD || 0}-${bankList[bankList.length - 1].BankCD || 0})` : "(Đang lấy dữ liệu...)"}
+            {bankList.length > 0 ?`(Các mã có thể nhập: ${bankList[0].BANK_CD || 0}-${bankList[bankList.length - 1].BANK_CD || 0})` : "(Đang lấy dữ liệu...)"}
           </span>
             </h2>
        
@@ -781,6 +807,7 @@ export default ({ type = "" }) => {
               name="BankCD"
               required
               type="text"
+              maxLength={5}
               value={customer.BankCD || ""}
               onChange={(e) => {
                 setCustomer((prevData) => ({
@@ -859,6 +886,7 @@ export default ({ type = "" }) => {
             >
               <div className="w-full">
                 <input
+                  id={`iput_${index}`}
                   type="text"
                   className="text-black placeholder-gray-600 w-full px-4 py-2.5 text-base transition duration-500 ease-in-out transform border-transparent rounded-l-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
                   placeholder="Nhập email"

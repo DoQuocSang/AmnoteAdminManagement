@@ -104,7 +104,7 @@ export default ({
               <div className="p-3 mt-2 text-center md:block">
                 <div className={isSuccess === true ? "space-x-4" : "hidden"}>
                   <Link
-                    to={`/admin/dashboard/${page}`}
+                    to={`/dashboard/${page}`}
                     className="notification_closebutton mb-2 md:mb-0 bg-white px-10 py-2 text-sm shadow-sm font-medium tracking-wider border text-gray-600 rounded-full hover:shadow-lg hover:bg-gray-100"
                   >
                     Xem danh sách
