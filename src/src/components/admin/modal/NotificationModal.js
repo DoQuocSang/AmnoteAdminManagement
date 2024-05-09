@@ -41,8 +41,16 @@ export default ({
     page = "all-customer";
   }
 
+  if (type === "bank") {
+    page = "all-bank";
+  }
+
   if (type === "unit-code") {
     page = "all-unit-code";
+  }
+
+  if (type === "material-code") {
+    page = "all-material-code";
   }
 
   const handleContinue = () => {

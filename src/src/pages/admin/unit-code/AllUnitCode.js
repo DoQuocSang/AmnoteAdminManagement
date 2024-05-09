@@ -123,7 +123,7 @@ export default () => {
                     Quản lý mã đơn vị tính
                   </h3>
                   <span className="text-base font-normal text-gray-500">
-                    Các khách hàng hiện có trong database
+                    Các mã đơn vị tính hiện có trong database
                   </span>
                 </div>
                 <div className="flex-shrink-0"></div>

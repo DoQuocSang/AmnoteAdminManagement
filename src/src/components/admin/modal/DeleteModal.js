@@ -4,6 +4,8 @@ import { faCircleCheck, faThumbsUp } from "@fortawesome/free-solid-svg-icons";
 import { deleteCustomer } from "services/CustomerRepository";
 import LoadingApiGif from "../../../images/loading-api-color.gif";
 import { deleteUnitCode } from "services/UnitCodeRepository";
+import { deleteMaterialCode } from "services/MaterialCodeRepository";
+import { deleteBank } from "services/BankRepository";
 
 export default ({
   mainText = "item",
@@ -26,7 +28,9 @@ export default ({
     closebutton.addEventListener("click", () =>
       modal.classList.remove("scale-100")
     );
-    closespace.addEventListener("click", () => modal.classList.remove("scale-100"));
+    closespace.addEventListener("click", () =>
+      modal.classList.remove("scale-100")
+    );
   }, []);
 
   const handleDelete = () => {
@@ -54,25 +58,67 @@ export default ({
     }
 
     if (type === "unit-code") {
-        console.log(deleteItems);
-  
-        for (const item of deleteItems) {
-          deleteUnitCode({
-            Lag: sessionStorage.getItem("lag"),
-            productUnitCD: item,
-          }).then((data) => {
-            if (data.status === "success") {
-              isDelete(true);
-              //Thay đổi nội dung thông báo nếu xóa thành công
-              setChangeContent(true);
-              setShowLoading(false);
-            } else if (data.status === "error") {
-              console.log("Lỗi");
-              setShowLoading(false);
-            }
-          });
-        }
+      console.log(deleteItems);
+
+      for (const item of deleteItems) {
+        deleteUnitCode({
+          Lag: sessionStorage.getItem("lag"),
+          productUnitCD: item,
+        }).then((data) => {
+          if (data.status === "success") {
+            isDelete(true);
+            //Thay đổi nội dung thông báo nếu xóa thành công
+            setChangeContent(true);
+            setShowLoading(false);
+          } else if (data.status === "error") {
+            console.log("Lỗi");
+            setShowLoading(false);
+          }
+        });
       }
+    }
+
+    if (type === "material-code") {
+      console.log(deleteItems);
+
+      for (const item of deleteItems) {
+        deleteMaterialCode({
+          Lag: sessionStorage.getItem("lag"),
+          PRODUCTKIND_CD: item,
+        }).then((data) => {
+          if (data.status === "success") {
+            isDelete(true);
+            //Thay đổi nội dung thông báo nếu xóa thành công
+            setChangeContent(true);
+            setShowLoading(false);
+          } else if (data.status === "error") {
+            console.log("Lỗi");
+            setShowLoading(false);
+          }
+        });
+      }
+    }
+
+    if (type === "bank") {
+      console.log(deleteItems);
+
+      for (const item of deleteItems) {
+        deleteBank({
+          Lag: sessionStorage.getItem("lag"),
+          BANK_CD: item,
+        }).then((data) => {
+          if (data.status === "success") {
+            isDelete(true);
+            //Thay đổi nội dung thông báo nếu xóa thành công
+            setChangeContent(true);
+            setShowLoading(false);
+          } else if (data.status === "error") {
+            console.log("Lỗi");
+            setShowLoading(false);
+          }
+        });
+      }
+    }
   };
 
   return (
@@ -81,9 +127,10 @@ export default ({
         id="delete_modal"
         className="transform scale-0 transition-transform duration-300 min-w-screen h-screen animated fadeIn fixed left-0 top-0 flex justify-center items-center inset-0 z-50 outline-none focus:outline-none"
       >
-        <div 
-        id="space_close_delete_modal"
-        className="absolute bg-black opacity-50 inset-0 z-0"></div>
+        <div
+          id="space_close_delete_modal"
+          className="absolute bg-black opacity-50 inset-0 z-0"
+        ></div>
         <div className="w-full max-w-lg p-5 relative mx-auto my-auto rounded-xl shadow-lg  bg-white ">
           {/* Loading */}
           <div className={showLoading ? "" : "hidden"}>

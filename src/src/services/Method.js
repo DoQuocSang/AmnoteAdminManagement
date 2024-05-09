@@ -92,15 +92,27 @@ export async function put_api(your_api, formData) {
 }
 
 //==========================================================
-export async function specical_case_get_api(your_api) {
+export async function get_api_with_params(your_api, data) {
   try {
-    const response = await axios.get(your_api);
-    if (response.request.status === 200) {
-      return response.data.data;
+    const token = getAccessToken();
+    const lag = getLag();
+    const response = await axios.get(your_api, {
+      params: {
+        ...data,
+        Lag: lag,
+      },
+      headers: {
+        authorization: `Bearer ${token}`,
+      },
+    });
+    //console.log(response);
+    if (response.status === 200) {
+      return response.data;
     } else {
       return null;
     }
   } catch (error) {
     console.log("Error", error.message);
+    return error.response ? error.response.data : null;
   }
 }

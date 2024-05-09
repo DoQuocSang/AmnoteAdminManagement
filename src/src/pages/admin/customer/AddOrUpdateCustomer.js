@@ -33,7 +33,11 @@ import { getHeritageWithDetailById } from "../../../services/HeritageRepository"
 import { addHeritageWithParagraphs } from "../../../services/HeritageRepository";
 import { putHeritageWithParagraphs } from "../../../services/HeritageRepository";
 import { splitImageUrls } from "../../../components/utils/Utils";
-import { addCustomer, getSelectTypeCustomer, updateCustomer } from "services/CustomerRepository";
+import {
+  addCustomer,
+  getSelectTypeCustomer,
+  updateCustomer,
+} from "services/CustomerRepository";
 import { getAllBank } from "services/BankRepository";
 import { useSelector } from "react-redux";
 
@@ -50,12 +54,12 @@ export default ({ type = "" }) => {
   let maintAction = "";
   if (id === 0) {
     maintAction = "thêm";
-    sessionStorage.removeItem('editItem')
+    sessionStorage.removeItem("editItem");
   } else {
     maintAction = "cập nhật";
-    storedEditItem = JSON.parse(sessionStorage.getItem('editItem'));
+    storedEditItem = JSON.parse(sessionStorage.getItem("editItem"));
+    console.log(storedEditItem);
   }
-
 
   const initialState = {
       Lag: sessionStorage.getItem("lag"),
@@ -80,11 +84,11 @@ export default ({ type = "" }) => {
       KindBusiness: storedEditItem?.KIND_BUSINESS || "",
       Fax: storedEditItem?.FAX || "",
       Tel: storedEditItem?.TEL || "",
-      IDNumber: storedEditItem?.IDNUMBER || "",
-      PlaceIssue:storedEditItem?.PLACE_ISSUE || "",
-      DateIssue: storedEditItem?.DATE_ISSUE || "",
+      CustomerIDNumber: storedEditItem?.IDNUMBER || "",
+      CustomerPlaceIssue: storedEditItem?.PLACE_ISSUE || "",
+      CustomerDateIssue: storedEditItem?.DATE_ISSUE || "",
       InquiryIn: storedEditItem?.INQUIRY_IN || "",
-      PaymentTerm: storedEditItem?.PAYMENT_TERM || "",
+      PaymentTerm: storedEditItem?.PAYMENT_TERM || 0,
       CustomerReceive: storedEditItem?.CUSTOMER_RECEIVE || "",
       AddressReceive: storedEditItem?.ADDRESS_RECEIVE || "",
       TaxCDReceive: storedEditItem?.TAX_CD_RECEIVE || "",
@@ -105,19 +109,18 @@ export default ({ type = "" }) => {
   // const data = useSelector(state => state.data);
   // console.log(data)
 
-
-
   //console.log(id);
   useEffect(() => {
     document.title = "Thêm/ cập nhật khách hàng";
-    
+
     if (id !== 0) {
-      console.log(storedEditItem)
-      console.log(customer)
-      if(customer.Email.trim() !== ""){
+      console.log(storedEditItem);
+      console.log(customer);
+      if (customer.Email.trim() !== "") {
         setEmailList(customer.Email.split(";"));
       }
-    } 
+      CheckTaxCode(customer.CategoryCD);
+    }
 
     getSelectTypeCustomer().then((data) => {
       if (data) {
@@ -136,7 +139,6 @@ export default ({ type = "" }) => {
       }
     });
   }, []);
-
 
   //validate lỗi bổ trống
   const validateAllCustomerInput = () => {
@@ -163,11 +165,10 @@ export default ({ type = "" }) => {
     //   validationErrors.CustomerNM_KOR = "Vui lòng nhập tên khách hàng (tiếng Anh)";
     // }
 
-    if(hasTaxCode){
+    if (hasTaxCode) {
       if (customer.TaxCD.trim() === "") {
         validationErrors.TaxCD = "Vui lòng nhập mã số thuế";
-      }
-      else if (customer.TaxCD.trim().length !== 10) {
+      } else if (customer.TaxCD.trim().length !== 10) {
         validationErrors.TaxCD = "Vui lòng nhập đủ 10 chữ số";
       }
     }
@@ -212,6 +213,10 @@ export default ({ type = "" }) => {
   const CheckTaxCode = (eventValue) => {
     if (eventValue === "4" || eventValue === "5") {
       setHasTaxCode(false);
+      setCustomer((prevData) => ({
+        ...prevData,
+        TaxCD: "",
+      }));
     } else {
       setHasTaxCode(true);
     }
@@ -288,38 +293,41 @@ export default ({ type = "" }) => {
     // Nếu không có lỗi mới xóa hoặc cập nhật
     if (validateAllCustomerInput() === false) {
       if (id === 0) {
-        addCustomer(customer).then(data => {
-            // SetSuccessFlag(true);
-            if(data.status === "success"){
-              SetSuccessFlag(true);
-              setMessageAPI(data.messages[0])
-              setShowLoading(false);
-              // console.log(data.result);
-            } else if (data.status === "error"){
-              SetSuccessFlag(false);
-              setMessageAPI(data.messages[0]);
-              setShowLoading(false);
-            }
-        });
-      } else {
-        updateCustomer(customer).then(data => {
+        addCustomer(customer).then((data) => {
           // SetSuccessFlag(true);
-          if(data.status === "success"){
+          if (data.status === "success") {
             SetSuccessFlag(true);
-            setMessageAPI(data.messages[0])
+            setMessageAPI(data.messages[0]);
             setShowLoading(false);
             // console.log(data.result);
-          } else if (data.status === "error"){
+          } else if (data.status === "error") {
             SetSuccessFlag(false);
             setMessageAPI(data.messages[0]);
             setShowLoading(false);
           }
-      });
+        });
+      } else {
+        updateCustomer(customer).then((data) => {
+          // SetSuccessFlag(true);
+          if (data.status === "success") {
+            SetSuccessFlag(true);
+            setMessageAPI(data.messages[0]);
+            setShowLoading(false);
+            // console.log(data.result);
+          } else if (data.status === "error") {
+            SetSuccessFlag(false);
+            setMessageAPI(data.messages[0]);
+            setShowLoading(false);
+          }
+        });
       }
-    }else{
+    } else {
       setMessageAPI("Vui lòng kiểm tra lại các ô nhập liệu");
       setShowLoading(false);
     }
+
+    // sessionStorage.removeItem("editItem");
+    // sessionStorage.setItem("editItem", JSON.stringify(customer));
   };
 
   //Xử lý khi bấm xóa bên component con NotificationModal
@@ -366,8 +374,8 @@ export default ({ type = "" }) => {
               <input
                 type="radio"
                 value={"1"}
-                checked={customer.CustomerType === "1"} 
-                onChange={(e) => 
+                checked={customer.CustomerType === "1"}
+                onChange={(e) =>
                   setCustomer((prevData) => ({
                     ...prevData,
                     CustomerType: e.target.value,
@@ -392,12 +400,13 @@ export default ({ type = "" }) => {
               <input
                 type="radio"
                 value={"2"}
-                checked={customer.CustomerType === "2"} 
-                onChange={(e) => 
+                checked={customer.CustomerType === "2"}
+                onChange={(e) =>
                   setCustomer((prevData) => ({
-                  ...prevData,
-                  CustomerType: e.target.value,
-                }))}
+                    ...prevData,
+                    CustomerType: e.target.value,
+                  }))
+                }
                 class="peer hidden"
                 name="CUSTOMER_TYPE_NAME_VIET"
               />
@@ -536,7 +545,7 @@ export default ({ type = "" }) => {
               <input
                 name="TaxCD"
                 required
-                type="number"
+                type="text"
                 value={customer.TaxCD || ""}
                 onChange={(e) =>
                   setCustomer((prevData) => ({
@@ -544,6 +553,7 @@ export default ({ type = "" }) => {
                     TaxCD: e.target.value,
                   }))
                 }
+                maxLength={10}
                 placeholder="Nhập mã số thuế"
                 className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
               />
@@ -613,7 +623,7 @@ export default ({ type = "" }) => {
               <input
                 type="radio"
                 value={"1"}
-                checked={customer.Individual === "1"} 
+                checked={customer.Individual === "1"}
                 onChange={(e) =>
                   setCustomer((prevData) => ({
                     ...prevData,
@@ -639,7 +649,7 @@ export default ({ type = "" }) => {
               <input
                 type="radio"
                 value={"0"}
-                checked={customer.Individual === "0"} 
+                checked={customer.Individual === "0"}
                 onChange={(e) =>
                   setCustomer((prevData) => ({
                     ...prevData,
@@ -662,11 +672,11 @@ export default ({ type = "" }) => {
             </label>
           </div>
           {customerErrors.Individual && (
-              <p className="text-red-500 mb-6 text-sm font-semibold">
-                <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
-                {customerErrors.Individual}
-              </p>
-            )}
+            <p className="text-red-500 mb-6 text-sm font-semibold">
+              <FontAwesomeIcon className="mr-2" icon={faXmarkCircle} />
+              {customerErrors.Individual}
+            </p>
+          )}
 
           <div className=" rounded-lg py-6 px-8 bg-gray-100 mb-4">
             {/* --------------------------------------------------------------------------------- */}
@@ -693,7 +703,9 @@ export default ({ type = "" }) => {
             )}
 
             {/* --------------------------------------------------------------------------------- */}
-            <h2 className="font-semibold text-sm text-teal-500">CMND/CCCD</h2>
+            <h2 className="font-semibold text-sm text-teal-500">
+              CMND/CCCD
+            </h2>
             <input
               name="IDNumber"
               required
@@ -702,7 +714,7 @@ export default ({ type = "" }) => {
               onChange={(e) =>
                 setCustomer((prevData) => ({
                   ...prevData,
-                  IDNumber: e.target.value
+                  IDNumber: e.target.value,
                 }))
               }
               placeholder="Nhập CMND/CCCD"
@@ -716,7 +728,13 @@ export default ({ type = "" }) => {
             )}
 
             {/* --------------------------------------------------------------------------------- */}
-            <h2 className="font-semibold text-sm text-teal-500">Nơi cấp</h2>
+            <h2 className="font-semibold text-sm text-teal-500 flex items-center gap-2">
+              Nơi cấp
+              <FontAwesomeIcon
+                icon={faCircle}
+                className="w-2 h-2 text-red-500"
+              />
+            </h2>
             <input
               name="PlaceIssue"
               required
@@ -739,7 +757,13 @@ export default ({ type = "" }) => {
             )}
 
             {/* --------------------------------------------------------------------------------- */}
-            <h2 className="font-semibold text-sm text-teal-500">Ngày cấp</h2>
+            <h2 className="font-semibold text-sm text-teal-500 flex items-center gap-2">
+              Ngày cấp
+              <FontAwesomeIcon
+                icon={faCircle}
+                className="w-2 h-2 text-red-500"
+              />
+            </h2>
             <input
               name="DateIssue"
               required
@@ -798,10 +822,14 @@ export default ({ type = "" }) => {
           <h2 className="font-semibold text-sm text-teal-500">
             Ngân hàng
             <span className="font-semibold text-xs text-gray-500 ml-2">
-            {bankList.length > 0 ?`(Các mã có thể nhập: ${bankList[0].BANK_CD || 0}-${bankList[bankList.length - 1].BANK_CD || 0})` : "(Đang lấy dữ liệu...)"}
-          </span>
-            </h2>
-       
+              {bankList.length > 0
+                ? `(Các mã có thể nhập: ${bankList[0].BANK_CD || 0}-${
+                    bankList[bankList.length - 1].BANK_CD || 0
+                  })`
+                : "(Đang lấy dữ liệu...)"}
+            </span>
+          </h2>
+
           <div className="sm:block md:flex lg:flex items-center justify-between w-full gap-4">
             <input
               name="BankCD"
@@ -832,12 +860,16 @@ export default ({ type = "" }) => {
           </div>
 
           {/* --------------------------------------------------------------------------------- */}
-          <h2 className="font-semibold text-sm text-teal-500">Số điện thoại</h2>
+          <h2 className="font-semibold text-sm text-teal-500 flex items-center gap-2">
+            Số điện thoại
+            <FontAwesomeIcon icon={faCircle} className="w-2 h-2 text-red-500" />
+          </h2>
           <input
             name="Tel"
             required
             type="text"
             value={customer.Tel || ""}
+            maxLength={10}
             onChange={(e) =>
               setCustomer((prevData) => ({
                 ...prevData,
@@ -921,6 +953,7 @@ export default ({ type = "" }) => {
             required
             type="text"
             value={customer.Fax || ""}
+            maxLength={10}
             onChange={(e) =>
               setCustomer((prevData) => ({
                 ...prevData,
@@ -962,8 +995,9 @@ export default ({ type = "" }) => {
           )}
 
           {/* --------------------------------------------------------------------------------- */}
-          <h2 className="font-semibold text-sm text-teal-500">
+          <h2 className="font-semibold text-sm text-teal-500 flex items-center gap-2">
             Số đăng ký kinh doanh
+            <FontAwesomeIcon icon={faCircle} className="w-2 h-2 text-red-500" />
           </h2>
           <input
             name="BRN"
@@ -1083,8 +1117,9 @@ export default ({ type = "" }) => {
           )}
 
           {/* --------------------------------------------------------------------------------- */}
-          <h2 className="font-semibold text-sm text-teal-500">
+          <h2 className="font-semibold text-sm text-teal-500 flex items-center gap-2">
             Thời hạn thanh toán
+            <FontAwesomeIcon icon={faCircle} className="w-2 h-2 text-red-500" />
           </h2>
           <input
             name="PaymentTerm"
@@ -1094,7 +1129,7 @@ export default ({ type = "" }) => {
             onChange={(e) =>
               setCustomer((prevData) => ({
                 ...prevData,
-                PaymentTerm: e.target.value,
+                PaymentTerm: parseInt(e.target.value, 10),
               }))
             }
             placeholder="Nhập thời hạn thanh toán"
@@ -1171,6 +1206,7 @@ export default ({ type = "" }) => {
                   TaxCDReceive: e.target.value,
                 }))
               }
+              maxLength={10}
               placeholder="Nhập mã số thuế"
               className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
             />

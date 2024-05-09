@@ -85,7 +85,7 @@ export default ({ type = "" }) => {
     const validationErrors = {};
 
     if (unitCode.productUnitName.trim() === "") {
-      validationErrors.productUnitName = "Vui lòng nhập tên mã đơn vị tính";
+      validationErrors.productUnitName = "Vui lòng nhập tên đơn vị tính";
     }
 
     setUnitCodeErrors(validationErrors);
@@ -190,20 +190,21 @@ export default ({ type = "" }) => {
 
           {/* --------------------------------------------------------------------------------- */}
           <h2 className="font-semibold text-sm text-teal-500">
-            Tên mã đơn vị tính
+            Tên đơn vị tính
           </h2>
           <input
             name="productUnitName"
             required
             type="text"
             value={unitCode.productUnitName || ""}
+            maxLength={10} 
             onChange={(e) =>
               setUnitCode((prevData) => ({
                 ...prevData,
                 productUnitName: e.target.value,
               }))
             }
-            placeholder="Nhập tên mã đơn vị tính"
+            placeholder="Nhập tên đơn vị tính"
             className="text-black mb-4 placeholder-gray-600 w-full px-4 py-2.5 mt-2 text-base   transition duration-500 ease-in-out transform border-transparent rounded-lg bg-gray-200  focus:border-blueGray-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:shadow-outline focus:ring-1 ring-offset-current ring-offset-2 ring-purple-400"
           />
           {unitCodeErrors.productUnitName && (
